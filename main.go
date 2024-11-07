@@ -16,6 +16,12 @@ type LocalSSH struct {
 	data   map[string]interface{}
 }
 
+func (l *LocalSSH) Configure(config map[string]string) error {
+	l.logger.Debug("configuring local ssh plugin")
+	l.logger.Debug("config passed", config)
+	return nil
+}
+
 func (l *LocalSSH) PrepareForEval() error {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
