@@ -60,9 +60,10 @@ func main() {
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: runner.HandshakeConfig,
 		Plugins: map[string]goplugin.Plugin{
-			"runner": &runner.RunnerPlugin{
+			"runner": &runner.RunnerGRPCPlugin{
 				Impl: localSSH,
 			},
 		},
+		GRPCServer: goplugin.DefaultGRPCServer,
 	})
 }
