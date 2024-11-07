@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	concomplugin "github.com/chris-cmsoft/concom/plugin"
+	"github.com/chris-cmsoft/concom/runner"
 	"github.com/chris-cmsoft/conftojson/pkg"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
@@ -18,9 +18,10 @@ type LocalSSH struct {
 	data   map[string]interface{}
 }
 
-func (l *LocalSSH) PolicyNamespace() string {
-	return "local_ssh"
-}
+//func (l *LocalSSH) Namespace() (string, error) {
+//	l.logger.Debug("Getting policy namespace")
+//	return "local_ssh", nil
+//}
 
 func (l *LocalSSH) PrepareForEval() error {
 	l.logger.Debug("Preparing to check SSH configuration")
@@ -54,23 +55,31 @@ func (l *LocalSSH) PrepareForEval() error {
 
 func main() {
 	logger := hclog.New(&hclog.LoggerOptions{
-		Level:      hclog.Debug,
+		Level:      hclog.Trace,
 		Output:     os.Stderr,
 		JSONFormat: true,
 	})
 
-	localSshPlugin := &LocalSSH{
+	localSSH := &LocalSSH{
 		logger: logger,
 	}
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]goplugin.Plugin{
-		"evaluator": &concomplugin.EvaluatorPlugin{Impl: localSshPlugin},
+		"runner": &runner.RunnerPlugin{
+			Impl: localSSH,
+		},
 	}
 
 	logger.Debug("message from plugin", "foo", "bar")
 
 	goplugin.Serve(&goplugin.ServeConfig{
-		HandshakeConfig: concomplugin.HandshakeConfig,
+		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
 	})
+}
+
+var handshakeConfig = goplugin.HandshakeConfig{
+	ProtocolVersion:  1,
+	MagicCookieKey:   "BASIC_PLUGIN",
+	MagicCookieValue: "hello",
 }
