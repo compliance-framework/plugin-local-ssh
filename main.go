@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"github.com/chris-cmsoft/concom/bundle"
 	"github.com/chris-cmsoft/concom/runner"
 	"github.com/chris-cmsoft/conftojson/pkg"
 	"github.com/hashicorp/go-hclog"
@@ -45,11 +46,32 @@ func (l *LocalSSH) PrepareForEval() error {
 	return nil
 }
 
-//func (l *LocalSSH) Evaluate(query rego.PreparedEvalQuery) (rego.ResultSet, error) {
-//	ctx := context.TODO()
-//	result, err := query.Eval(ctx, rego.EvalInput(l.data))
-//	return result, err
-//}
+func (l *LocalSSH) Eval(bundlePath string) error {
+	l.logger.Debug("evaluating local ssh against policies", "policy", bundlePath)
+	ctx := context.TODO()
+
+	evaluator := bundle.New(ctx, bundlePath)
+
+	query, err := evaluator.BuildQuery(ctx, "local_ssh")
+	if err != nil {
+		return err
+	}
+
+	l.logger.Debug("evaluating local ssh against policies", "query", query)
+	//l.logger.Debug("evaluating local ssh against policies", "policy", l.data)
+
+	results, err := evaluator.Execute(ctx, l.data)
+
+	for _, result := range results {
+		// Create Finding
+		if len(result.Violations) > 0 {
+
+		}
+	}
+
+	l.logger.Debug("evaluation result", "result", results, "err", err)
+	return err
+}
 
 func main() {
 	logger := hclog.New(&hclog.LoggerOptions{
