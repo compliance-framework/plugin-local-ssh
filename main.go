@@ -9,6 +9,7 @@ import (
 	"github.com/chris-cmsoft/concom/runner"
 	"github.com/chris-cmsoft/concom/runner/proto"
 	"github.com/chris-cmsoft/conftojson/pkg"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 	"os/exec"
@@ -17,11 +18,11 @@ import (
 type LocalSSH struct {
 	logger hclog.Logger
 	data   map[string]interface{}
+	config map[string]string
 }
 
 func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
-	l.logger.Debug("configuring local ssh plugin")
-	l.logger.Debug("config passed", req.Config)
+	l.config = req.Config
 	return &proto.ConfigureResponse{}, nil
 }
 
@@ -54,22 +55,49 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 
 	evaluator := bundle.New(ctx, request.BundlePath)
 
-	query, err := evaluator.BuildQuery(ctx, "local_ssh")
+	_, err := evaluator.BuildQuery(ctx, "local_ssh")
 	if err != nil {
-		return &proto.EvalResponse{}, err
+		return nil, err
 	}
 
-	l.logger.Debug("evaluating local ssh against policies", "query", query)
-	//l.logger.Debug("evaluating local ssh against policies", "policy", l.data)
+	response := runner.NewCallableEvalResponse()
 
 	results, err := evaluator.Execute(ctx, l.data)
 	if err != nil {
-		return &proto.EvalResponse{}, err
+		return nil, err
 	}
 
 	for _, result := range results {
 		// Create Finding
+		if len(result.Violations) == 0 {
+			response.AddFinding(&proto.Finding{
+				Id:                  uuid.New().String(),
+				Title:               "",
+				Description:         "",
+				Remarks:             "",
+				Props:               nil,
+				Links:               nil,
+				SubjectId:           "",
+				RelatedObservations: nil,
+				RelatedRisks:        nil,
+			})
+		}
+
 		if len(result.Violations) > 0 {
+
+			response.AddObservation(&proto.Observation{
+				Id:               uuid.New().String(),
+				Title:            "",
+				Description:      "",
+				Props:            nil,
+				Links:            nil,
+				Remarks:          "",
+				SubjectId:        "",
+				Collected:        "",
+				Expires:          "",
+				RelevantEvidence: nil,
+			})
+
 			// We have some violations for the policies.
 			// Let's check them
 			fmt.Println("Package:", result.Policy.Package)
@@ -78,27 +106,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 		}
 	}
 
-	l.logger.Debug("evaluation result", "result", results, "err", err)
-	return &proto.EvalResponse{
-		Status: 0,
-		Observations: []*proto.Observation{
-			{
-				Id:               "12345",
-				Title:            "Some Title",
-				Description:      "Some Description",
-				Props:            nil,
-				Links:            nil,
-				Remarks:          "Some Remark",
-				SubjectId:        "123",
-				Collected:        "123",
-				Expires:          "123",
-				RelevantEvidence: nil,
-			},
-		},
-		Findings: []*proto.Finding{},
-		Risks:    []*proto.Risk{},
-		Logs:     []*proto.LogEntry{},
-	}, err
+	return response.Result(), err
 }
 
 func main() {
