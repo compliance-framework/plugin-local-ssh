@@ -53,19 +53,16 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	l.logger.Debug("evaluating local ssh against policies", "policy", request.BundlePath)
 	ctx := context.TODO()
 
-	evaluator := bundle.New(ctx, request.BundlePath)
+	// policy path = directory
+	// bundle = tar.gz
+	// nothing = plugin itself is doing valuation
 
-	_, err := evaluator.BuildQuery(ctx, "local_ssh")
+	results, err := bundle.New(ctx, request.BundlePath).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
-		return nil, err
+		return &proto.EvalResponse{}, err
 	}
 
 	response := runner.NewCallableEvalResponse()
-
-	results, err := evaluator.Execute(ctx, l.data)
-	if err != nil {
-		return nil, err
-	}
 
 	for _, result := range results {
 		// Create Finding
