@@ -16,8 +16,9 @@ rego module:
 package compliance_framework.local_ssh.deny_password_auth
 ```
 
-Policies expect a key of `violation` to indicate failed resources, which will be reported to the compliance framework. 
-Additional data can be added to violations, that describe what failed, and recommendations on how to fix them.
+The plugin expects Rego policies to output a `violation` key to indicate failed resources, which will be reported to the 
+compliance framework. Additional data can be added to violations, that describe what failed, and recommendations on how 
+to fix them.
 
 Here is an example rego policy which ensures that passwords are turned off for SSH-able hosts.
 
@@ -49,5 +50,5 @@ You can find the binaries on each release of this plugin in the GitHub releases 
 The agent will take care of pulling the correct binary. 
 
 ```shell
-concom agent --plugin=
+concom agent --plugin=https://github.com/chris-cmsoft/concom-plugin-local-ssh/releases/tag/0.0.1
 ```
