@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.6.2
+	github.com/open-policy-agent/opa v0.69.0
 )
 
 require (
@@ -27,7 +28,6 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.0.0 // indirect
-	github.com/open-policy-agent/opa v0.69.0 // indirect
 	github.com/prometheus/client_golang v1.20.4 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect

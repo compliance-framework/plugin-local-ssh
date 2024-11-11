@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 	"os/exec"
+	"time"
 )
 
 type LocalSSH struct {
@@ -53,9 +54,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	l.logger.Debug("evaluating local ssh against policies", "policy", request.BundlePath)
 	ctx := context.TODO()
 
-	// policy path = directory
-	// bundle = tar.gz
-	// nothing = plugin itself is doing valuation
+	start_time := time.Now().Format(time.RFC3339)
 
 	results, err := policyManager.New(ctx, l.logger, request.BundlePath).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
@@ -67,41 +66,56 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	for _, result := range results {
 		// Create Finding
 		if len(result.Violations) == 0 {
-			response.AddFinding(&proto.Finding{
-				Id:                  uuid.New().String(),
-				Title:               "",
-				Description:         "",
-				Remarks:             "",
-				Props:               nil,
-				Links:               nil,
-				SubjectId:           "",
-				RelatedObservations: nil,
-				RelatedRisks:        nil,
+			response.AddObservation(&proto.Observation{
+				Id:          uuid.New().String(),
+				Title:       fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage()),
+				Description: fmt.Sprintf("Observed no violations on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
+				Collected:   time.Now().Format(time.RFC3339),
+				Expires:     time.Now().AddDate(0, 1, 0).Format(time.RFC3339), // Add one month for the expiration
+				RelevantEvidence: []*proto.Evidence{
+					{
+						Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
+					},
+				},
 			})
 		}
 
 		if len(result.Violations) > 0 {
+			observation := &proto.Observation{
+				Id:          uuid.New().String(),
+				Title:       fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage()),
+				Description: fmt.Sprintf("Observed %s violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage()),
+				Collected:   time.Now().Format(time.RFC3339),
+				Expires:     time.Now().AddDate(0, 1, 0).Format(time.RFC3339), // Add one month for the expiration
+				RelevantEvidence: []*proto.Evidence{
+					{
+						Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
+					},
+				},
+			}
+			response.AddObservation(observation)
 
-			response.AddObservation(&proto.Observation{
-				Id:               uuid.New().String(),
-				Title:            "",
-				Description:      "",
-				Props:            nil,
-				Links:            nil,
-				Remarks:          "",
-				SubjectId:        "",
-				Collected:        "",
-				Expires:          "",
-				RelevantEvidence: nil,
-			})
+			for _, violation := range result.Violations {
+				response.AddFinding(&proto.Finding{
+					Id:          uuid.New().String(),
+					Title:       violation.GetString("title", fmt.Sprintf("Validation on %s failed with violation %v", result.Policy.Package.PurePackage(), violation)),
+					Description: violation.GetString("description", ""),
 
-			// We have some violations for the policies.
-			// Let's check them
-			fmt.Println("Package:", result.Policy.Package)
-			fmt.Println("Additional Variables:", result.AdditionalVariables)
-			fmt.Println("Violations:", result.Violations)
+					Remarks:             violation.GetString("remarks", ""),
+					RelatedObservations: []string{observation.Id},
+				})
+			}
+
 		}
 	}
+
+	response.AddLogEntry(&proto.LogEntry{
+
+		Title:       "Local SSH check",
+		Description: "Local SSH Plugin checks completed successfully",
+		Start:       start_time,
+		End:         time.Now().Format(time.RFC3339),
+	})
 
 	return response.Result(), err
 }
