@@ -1,0 +1,22 @@
+{
+  "authorizedkeysfile": [
+    ".ssh/authorized_keys",
+    ".ssh/authorized_keys2"
+  ],
+  "listenaddress": [
+    "[::]:22",
+    "0.0.0.0:22"
+  ],
+  "passwordauthentication": [
+    "yes"
+  ],
+  "permitrootlogin": [
+    "without-password"
+  ],
+  "port": [
+    "22"
+  ],
+  "pubkeyauthentication": [
+    "yes"
+  ]
+}

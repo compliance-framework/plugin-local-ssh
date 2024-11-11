@@ -84,7 +84,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 			observation := &proto.Observation{
 				Id:          uuid.New().String(),
 				Title:       fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage()),
-				Description: fmt.Sprintf("Observed %s violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage()),
+				Description: fmt.Sprintf("Observed %d violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage()),
 				Collected:   time.Now().Format(time.RFC3339),
 				Expires:     time.Now().AddDate(0, 1, 0).Format(time.RFC3339), // Add one month for the expiration
 				RelevantEvidence: []*proto.Evidence{
