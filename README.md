@@ -1,5 +1,7 @@
 # Compliance Framework Local SSH Plugin
 
+Fetches the local SSH configuration on a host using `sshd -T`, and runs passed policies against the output.
+
 This plugin is intended to be run as part of an agent on a single host machine, 
 where SSH configuration needs to be validated.
 
