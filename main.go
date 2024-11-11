@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/chris-cmsoft/concom/bundle"
+	policyManager "github.com/chris-cmsoft/concom/policy-manager"
 	"github.com/chris-cmsoft/concom/runner"
 	"github.com/chris-cmsoft/concom/runner/proto"
 	"github.com/chris-cmsoft/conftojson/pkg"
@@ -57,7 +57,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	// bundle = tar.gz
 	// nothing = plugin itself is doing valuation
 
-	results, err := bundle.New(ctx, request.BundlePath).Execute(ctx, "local_ssh", l.data)
+	results, err := policyManager.New(ctx, l.logger, request.BundlePath).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
 		return &proto.EvalResponse{}, err
 	}
