@@ -42,9 +42,12 @@ violation[{
 
 ## Releases
 
-This plugin is released using goreleaser, which will ensure a binary is built for most OS and Architecture combinations. 
+This plugin is released using goreleaser to build binaries, and Docker to build OCI artifacts (WIP), 
+which will ensure a binary is built for most OS and Architecture combinations. 
 
-You can find the binaries on each release of this plugin in the GitHub releases page. 
+You can find the binaries on each release of this plugin in the GitHub releases page.
+
+You can find the OCI implementations in the GitHub Packages page. 
 
 [Not Yet Implemented] To run this plugin with the Compliance Agent, you can specify the release. 
 The agent will take care of pulling the correct binary. 
