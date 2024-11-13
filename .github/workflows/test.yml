@@ -1,0 +1,21 @@
+name: Test
+
+run-name: Running tests and checks for plugin
+
+on:
+  push:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+
+      - name: Test
+        run: go test ./...
