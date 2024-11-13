@@ -4,9 +4,8 @@ run-name: Running tests and checks for policies
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    tags:
+      - '*'
 
 jobs:
   test:
@@ -29,7 +28,6 @@ jobs:
       - uses: actions/setup-go@v5
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           # 'latest', 'nightly', or a semver
           version: '~> v2'
