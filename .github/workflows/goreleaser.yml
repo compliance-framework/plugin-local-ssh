@@ -20,8 +20,7 @@ jobs:
       - test
 
     permissions:
-      packages: write
-      contents: read
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
