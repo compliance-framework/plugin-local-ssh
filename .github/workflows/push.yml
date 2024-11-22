@@ -27,7 +27,7 @@ jobs:
         with:
           # 'latest', 'nightly', or a semver
           version: '~> v2'
-          args: release --clean --skip=publish
+          args: release --clean --snapshot --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install GOOCI cli
