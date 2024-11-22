@@ -35,4 +35,4 @@ jobs:
       - name: GOOCI Login
         run: gooci login ghcr.io --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: GOOCI Upload
-        run: gooci upload dist/ ghcr.io/compliance-framework/plugin/local-ssh:0.0.5-gh-action
+        run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:0.0.5-gh-action
