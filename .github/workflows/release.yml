@@ -15,7 +15,8 @@ jobs:
 
   release:
     permissions:
-      contents: read
+      packages: write
+      contents: write
     needs:
       - test
     uses: ./.github/workflows/build-and-upload.yml
