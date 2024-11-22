@@ -17,11 +17,17 @@ jobs:
   gooci-test:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       packages: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -32,7 +38,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install GOOCI cli
         run: go install github.com/compliance-framework/gooci@latest
-      - name: GOOCI Login
-        run: gooci login ghcr.io --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: GOOCI Upload
         run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:0.0.5-gh-action
