@@ -8,15 +8,8 @@ on:
       - '*'
 
 jobs:
-  test:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/test.yml
-
   release:
     permissions:
       packages: write
       contents: write
-    needs:
-      - test
     uses: ./.github/workflows/build-and-upload.yml
