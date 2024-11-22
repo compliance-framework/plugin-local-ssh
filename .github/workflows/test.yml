@@ -1,9 +1,6 @@
 name: Test
 
-run-name: Running tests and checks for plugin
-
 on:
-  push:
   workflow_call:
 
 jobs:

@@ -3,21 +3,11 @@ name: Build and Release Binaries
 run-name: Running tests and checks for policies
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_call:
 
 jobs:
-  test:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/test.yml
-
   release:
     runs-on: ubuntu-latest
-
-    needs:
-      - test
 
     permissions:
       contents: write

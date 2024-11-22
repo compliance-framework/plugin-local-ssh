@@ -1,0 +1,21 @@
+name: Release New Version
+
+run-name: Running tests and checks for policies
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  test:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test.yml
+
+  release:
+    permissions:
+      contents: read
+    needs:
+      - test
+    uses: ./.github/workflows/release.yml
