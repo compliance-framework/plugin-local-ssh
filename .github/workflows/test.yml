@@ -1,17 +1,11 @@
-name: Test
-
-run-name: Running tests and checks for plugin
+name: Go Test
 
 on:
-  push:
   workflow_call:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
 
     steps:
       - uses: actions/checkout@v4
