@@ -21,5 +21,8 @@ jobs:
         run: go install github.com/compliance-framework/gooci@latest
       - name: Authenticate gooci cli
         run: gooci login ghcr.io --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
-      - name: gooci Upload
+      - name: gooci Upload Version
         run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{github.ref_name}}
+      - name: gooci Upload Latest
+        if: "!github.event.release.prerelease"
+        run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
