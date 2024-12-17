@@ -5,25 +5,32 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
+	"time"
+
 	policyManager "github.com/chris-cmsoft/concom/policy-manager"
 	"github.com/chris-cmsoft/concom/runner"
 	"github.com/chris-cmsoft/concom/runner/proto"
 	"github.com/chris-cmsoft/conftojson/pkg"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
-	"os/exec"
-	"time"
 )
 
 type LocalSSH struct {
 	logger hclog.Logger
 	data   map[string]interface{}
 	config map[string]string
+	uuid   string
 }
 
 func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
 	l.config = req.Config
+	if uuid, ok := req.Config["uuid"]; ok {
+		l.uuid = uuid
+		l.logger.Debug("UUID received in Configure", "uuid", uuid)
+	} else {
+		l.logger.Warn("UUID not found in Configure request")
+	}
 	return &proto.ConfigureResponse{}, nil
 }
 
@@ -31,8 +38,10 @@ func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.Prep
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
 	cmd := exec.CommandContext(ctx, "sshd", "-T")
+	l.logger.Debug("executing sshd -T command")
 	stdout, err := cmd.Output()
 	if err != nil {
+		l.logger.Error("error executing sshd -T command", "error", err)
 		return &proto.PrepareForEvalResponse{}, err
 	}
 
@@ -67,7 +76,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 		// Create Finding
 		if len(result.Violations) == 0 {
 			response.AddObservation(&proto.Observation{
-				Id:          uuid.New().String(),
+				Id:          l.uuid,
 				Title:       fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage()),
 				Description: fmt.Sprintf("Observed no violations on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
 				Collected:   time.Now().Format(time.RFC3339),
@@ -82,7 +91,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 
 		if len(result.Violations) > 0 {
 			observation := &proto.Observation{
-				Id:          uuid.New().String(),
+				Id:          l.uuid,
 				Title:       fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage()),
 				Description: fmt.Sprintf("Observed %d violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage()),
 				Collected:   time.Now().Format(time.RFC3339),
@@ -97,7 +106,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 
 			for _, violation := range result.Violations {
 				response.AddFinding(&proto.Finding{
-					Id:          uuid.New().String(),
+					Id:          l.uuid,
 					Title:       violation.GetString("title", fmt.Sprintf("Validation on %s failed with violation %v", result.Policy.Package.PurePackage(), violation)),
 					Description: violation.GetString("description", ""),
 
