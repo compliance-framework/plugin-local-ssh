@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	policyManager "github.com/chris-cmsoft/concom/policy-manager"
-	"github.com/chris-cmsoft/concom/runner"
-	"github.com/chris-cmsoft/concom/runner/proto"
 	"github.com/chris-cmsoft/conftojson/pkg"
+	policyManager "github.com/compliance-framework/agent/policy-manager"
+	"github.com/compliance-framework/agent/runner"
+	"github.com/compliance-framework/agent/runner/proto"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -63,6 +64,9 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 
 	response := runner.NewCallableEvalResponse()
 
+	hostname := os.Getenv("HOSTNAME")
+	response.Title = fmt.Sprintf("SSH Configuration for host: %s", hostname)
+
 	for _, result := range results {
 		// Create Finding
 		if len(result.Violations) == 0 {
@@ -110,7 +114,6 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	}
 
 	response.AddLogEntry(&proto.LogEntry{
-
 		Title:       "Local SSH check",
 		Description: "Local SSH Plugin checks completed successfully",
 		Start:       start_time,

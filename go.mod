@@ -3,10 +3,10 @@ module github.com/chris-cmsoft/cf-plugin-local-ssh
 go 1.23.2
 
 require (
-	github.com/chris-cmsoft/concom v0.0.0-20241111123134-32f46c04102f
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
+	github.com/compliance-framework/agent v0.0.4-0.20241224140711-a461238e2d3f
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-hclog v0.14.1
+	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/go-plugin v1.6.2
 	github.com/open-policy-agent/opa v0.69.0
 )
@@ -16,7 +16,7 @@ require (
 	github.com/agnivade/levenshtein v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/fatih/color v1.7.0 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -24,15 +24,15 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/mattn/go-colorable v0.1.4 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.4 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
