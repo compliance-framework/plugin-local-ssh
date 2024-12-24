@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-	policy_manager "github.com/chris-cmsoft/concom/policy-manager"
-	"github.com/chris-cmsoft/concom/runner/proto"
+	policy_manager "github.com/compliance-framework/agent/policy-manager"
+	"github.com/compliance-framework/agent/runner/proto"
 	"github.com/google/uuid"
 	"github.com/open-policy-agent/opa/ast"
 	"testing"
@@ -62,7 +61,7 @@ func TestLocalSSH_Eval(t *testing.T) {
 		RelevantEvidence: nil,
 	}
 
-	finding := proto.Finding{
+	_ = proto.Finding{
 		Id:          uuid.New().String(),
 		Title:       "",
 		Description: "",
@@ -76,7 +75,4 @@ func TestLocalSSH_Eval(t *testing.T) {
 		},
 		RelatedRisks: nil,
 	}
-
-	fmt.Println(finding)
-
 }
