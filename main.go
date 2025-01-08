@@ -31,7 +31,7 @@ func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureRespo
 func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
-	cmd := exec.CommandContext(ctx, "sshd", "-T")
+	cmd := exec.CommandContext(ctx, "sudo", "sshd", "-T")
 	stdout, err := cmd.Output()
 	if err != nil {
 		return &proto.PrepareForEvalResponse{}, err
@@ -61,6 +61,8 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	if err != nil {
 		return &proto.EvalResponse{}, err
 	}
+
+	l.logger.Debug("local ssh evaluation completed", "results", results)
 
 	response := runner.NewCallableEvalResponse()
 
@@ -102,14 +104,64 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 			for _, violation := range result.Violations {
 				response.AddFinding(&proto.Finding{
 					Id:          uuid.New().String(),
-					Title:       violation.GetString("title", fmt.Sprintf("Validation on %s failed with violation %v", result.Policy.Package.PurePackage(), violation)),
-					Description: violation.GetString("description", ""),
+					Title:       violation.Title,
+					Description: violation.Description,
 
-					Remarks:             violation.GetString("remarks", ""),
+					Remarks:             violation.Remarks,
 					RelatedObservations: []string{observation.Id},
 				})
 			}
+		}
 
+		for _, task := range result.Tasks {
+			activities := []*proto.Activity{}
+
+			for _, activity := range task.Activities {
+				steps := []*proto.Step{}
+				for _, step := range activity.Steps {
+					steps = append(steps, &proto.Step{
+						Title:     step.Title,
+						SubjectId: "TODO",
+					})
+				}
+
+				activities = append(activities, &proto.Activity{
+					Title:       activity.Title,
+					SubjectId:   "TODO",
+					Description: activity.Description,
+					Type:        activity.Type,
+					Steps:       steps,
+					Tools:       activity.Tools,
+				})
+			}
+
+			response.AddTaskEntry(&proto.Task{
+				Title:       task.Title,
+				Description: task.Description,
+				Activities:  activities,
+			})
+		}
+
+		for _, risk := range result.Risks {
+			links := []*proto.Link{}
+			for _, link := range risk.Links {
+				links = append(links, &proto.Link{
+					Href:             link.URL,
+					MediaType:        "TODO",
+					Rel:              "TODO",
+					ResourceFragment: "TODO",
+					Text:             link.Text,
+				})
+			}
+
+			response.AddRiskEntry(&proto.Risk{
+				Title:       risk.Title,
+				SubjectId:   "TODO",
+				Description: risk.Description,
+				Statement:   risk.Statement,
+				Props:       []*proto.Property{},
+				Links:       []*proto.Link{},
+			})
 		}
 	}
 
