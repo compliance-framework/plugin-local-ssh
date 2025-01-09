@@ -34,6 +34,7 @@ func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.Prep
 	cmd := exec.CommandContext(ctx, "sshd", "-T")
 	stdout, err := cmd.Output()
 	if err != nil {
+		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
 		return &proto.PrepareForEvalResponse{}, err
 	}
 
@@ -43,6 +44,7 @@ func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.Prep
 	l.logger.Debug("converting ssh configuration to json map for evaluation")
 	sshConfigMap, err := pkg.ConvertConfToMap(scanner)
 	if err != nil {
+		l.logger.Error("Failed to convert SSH config to map", "error", err)
 		return &proto.PrepareForEvalResponse{}, err
 	}
 
@@ -59,6 +61,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 
 	results, err := policyManager.New(ctx, l.logger, request.BundlePath).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
+		l.logger.Error("Failed to create new policyManager object", "error", err)
 		return &proto.EvalResponse{}, err
 	}
 
