@@ -5,6 +5,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"time"
+
 	"github.com/chris-cmsoft/conftojson/pkg"
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
@@ -12,9 +16,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
-	"os"
-	"os/exec"
-	"time"
 )
 
 type LocalSSH struct {
@@ -103,13 +104,15 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 			response.AddObservation(observation)
 
 			for _, violation := range result.Violations {
+				status := proto.FindingStatus_OPEN
+				statusString := proto.FindingStatus_name[int32(status)]
 				response.AddFinding(&proto.Finding{
-					Id:          uuid.New().String(),
-					Title:       violation.GetString("title", fmt.Sprintf("Validation on %s failed with violation %v", result.Policy.Package.PurePackage(), violation)),
-					Description: violation.GetString("description", ""),
-
+					Id:                  uuid.New().String(),
+					Title:               violation.GetString("title", fmt.Sprintf("Validation on %s failed with violation %v", result.Policy.Package.PurePackage(), violation)),
+					Description:         violation.GetString("description", ""),
 					Remarks:             violation.GetString("remarks", ""),
 					RelatedObservations: []string{observation.Id},
+					Status:              statusString,
 				})
 			}
 
