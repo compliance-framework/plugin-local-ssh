@@ -21,23 +21,23 @@ func TestLocalSSH_Eval(t *testing.T) {
 				Package:     "compliance_framework.local_ssh.deny_password_auth",
 				Annotations: []*ast.Annotations{},
 			},
-			Violations: []policy_manager.Violation{
-				{
-					"msg": "SSH Hosts are not allowed to have SSH password enabled",
-				},
-				{
-					"msg": "Something else",
+			EvalOutput: &policy_manager.EvalOutput{
+				Violations: []policy_manager.Violation{
+					{
+						Title: "SSH Hosts are not allowed to have SSH password enabled",
+					},
+					{
+						Title: "Something else",
+					},
 				},
 			},
 		},
 	}
 	// ==============================================
 
-	results[0].Violations[0].GetString("title", "Local SSH Check failed.")
-
 	observation_one := proto.Observation{
 		Id:               uuid.New().String(),
-		Title:            results[0].Violations[0].GetString("title", "Local SSH Check failed."),
+		Title:            results[0].Violations[0].Title,
 		Description:      "",
 		Props:            nil,
 		Links:            nil,
