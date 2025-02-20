@@ -11,11 +11,14 @@ require (
 	github.com/open-policy-agent/opa v1.0.0
 )
 
+replace github.com/compliance-framework/agent => ../agent
+
 require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/agnivade/levenshtein v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/defenseunicorns/go-oscal v0.6.2 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
