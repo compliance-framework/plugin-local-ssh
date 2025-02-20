@@ -34,7 +34,7 @@ func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureRespo
 func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
-	cmd := exec.CommandContext(ctx, "sshd", "-T")
+	cmd := exec.CommandContext(ctx, "ssh", "root@jgc", "sshd", "-T")
 	stdout, err := cmd.Output()
 	if err != nil {
 		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
@@ -60,7 +60,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	l.logger.Debug("evaluating local ssh against policies", "policy", request.BundlePath)
 	ctx := context.TODO()
 
-	start_time := time.Now().Format(time.RFC3339)
+	startTime := time.Now()
 
 	results, err := policyManager.New(ctx, l.logger, request.BundlePath).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
@@ -123,7 +123,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 				},
 			})
 
-			status := proto.ObjectiveState_OBJECTIVE_STATE_SATISFIED
+			status := runner.FindingTargetStatusSatisfied
 			response.AddFinding(&proto.Finding{
 				Title:       fmt.Sprintf("No violations found on %s", result.Policy.Package.PurePackage()),
 				Description: fmt.Sprintf("No violations found on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
@@ -152,7 +152,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 			response.AddObservation(observation)
 
 			for _, violation := range result.Violations {
-				status := proto.ObjectiveState_OBJECTIVE_STATE_NOT_SATISFIED
+				status := runner.FindingTargetStatusNotSatisfied
 				response.AddFinding(&proto.Finding{
 					Title:       violation.Title,
 					Description: violation.Description,
@@ -190,12 +190,16 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 		}
 	}
 
+	endTime := time.Now()
 	response.AddLogEntry(&proto.AssessmentLog_Entry{
 		Title:       protolang.String("Local SSH check"),
 		Description: protolang.String("Local SSH Plugin checks completed successfully"),
-		Start:       start_time,
+		Start:       startTime.Format(time.RFC3339),
 		End:         protolang.String(time.Now().Format(time.RFC3339)),
 	})
+
+	result.Start = timestamppb.New(startTime)
+	result.End = timestamppb.New(endTime)
 
 	return response.Result(), err
 }
