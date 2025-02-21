@@ -34,7 +34,7 @@ func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureRespo
 func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
-	cmd := exec.CommandContext(ctx, "ssh", "root@jgc", "sshd", "-T")
+	cmd := exec.CommandContext(ctx, "sshd", "-T")
 	stdout, err := cmd.Output()
 	if err != nil {
 		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
