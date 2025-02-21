@@ -18,12 +18,14 @@ github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UF
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6 h1:50LCDU9IpLMdBC9+6+g7EReo50gr0BBFevGRaLwmdJQ=
 github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6/go.mod h1:lGxtdIwiDsj1U+vUxAydlacBWodyOoBjgJ9IX6T8YTQ=
-github.com/compliance-framework/agent v0.0.8 h1:Hb9fx/H0duMtdtBSB+RbMd5rVvlmicymiZ09kEik3mg=
-github.com/compliance-framework/agent v0.0.8/go.mod h1:c3dfplGX1pp5MgiwrWigzLLiKhKd8Poyx64Ru5EJMTA=
+github.com/compliance-framework/agent v0.0.12 h1:EYmU1XYr0ZoHjWo+qTSFDak3/JDVEwiu3E1rEkHljGk=
+github.com/compliance-framework/agent v0.0.12/go.mod h1:Op7+BLJ2Rze9bh/jqWt81GnsUKIczP/IBduGZXE81BQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/defenseunicorns/go-oscal v0.6.2 h1:oLkMAJYVMq73Rm+9efcyaKq5SLMditjB6wv7o3XXpq8=
+github.com/defenseunicorns/go-oscal v0.6.2/go.mod h1:UHp2yK9ty2mYJDun7oNhbstCq6SAAwP4YGbw9n7uG6o=
 github.com/dgraph-io/badger/v3 v3.2103.5 h1:ylPa6qzbjYRQMU6jokoj4wzcaweHylt//CH0AKt0akg=
 github.com/dgraph-io/badger/v3 v3.2103.5/go.mod h1:4MPiseMeDQ3FNCYwRbbcBOGJLf5jsE0PPFzRiKjtcdw=
 github.com/dgraph-io/ristretto v0.1.1 h1:6CWw5tJNgpegArSHpNHJKldNeq03FQCwYvfMVWajOK8=

@@ -3,9 +3,12 @@ package main
 import (
 	policy_manager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner/proto"
+	protolang "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/open-policy-agent/opa/ast"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"testing"
+	"time"
 )
 
 func TestLocalSSH_Eval(t *testing.T) {
@@ -36,42 +39,41 @@ func TestLocalSSH_Eval(t *testing.T) {
 	// ==============================================
 
 	observation_one := proto.Observation{
-		Id:               uuid.New().String(),
-		Title:            results[0].Violations[0].Title,
-		Description:      "",
-		Props:            nil,
-		Links:            nil,
-		Remarks:          "",
-		SubjectId:        "",
-		Collected:        "",
-		Expires:          "",
-		RelevantEvidence: nil,
+		Uuid:        uuid.New().String(),
+		Title:       protolang.String(results[0].Violations[0].Title),
+		Description: "",
+		Props:       nil,
+		Links:       nil,
+		Remarks:     protolang.String(""),
+		Collected:   timestamppb.New(time.Now()),
+		Expires:     timestamppb.New(time.Now().Add(time.Hour * 24)),
 	}
 
 	observation_two := proto.Observation{
-		Id:               uuid.New().String(),
-		Title:            "",
+		Uuid:             uuid.New().String(),
+		Title:            protolang.String(""),
 		Description:      "",
 		Props:            nil,
 		Links:            nil,
-		Remarks:          "",
-		SubjectId:        "",
-		Collected:        "",
-		Expires:          "",
+		Remarks:          protolang.String(""),
+		Collected:        timestamppb.New(time.Now()),
+		Expires:          timestamppb.New(time.Now().Add(time.Hour * 24)),
 		RelevantEvidence: nil,
 	}
 
 	_ = proto.Finding{
-		Id:          uuid.New().String(),
 		Title:       "",
 		Description: "",
-		Remarks:     "",
+		Remarks:     protolang.String(""),
 		Props:       nil,
 		Links:       nil,
-		SubjectId:   "",
-		RelatedObservations: []string{
-			observation_one.Id,
-			observation_two.Id,
+		RelatedObservations: []*proto.RelatedObservation{
+			{
+				ObservationUuid: observation_one.Uuid,
+			},
+			{
+				ObservationUuid: observation_two.Uuid,
+			},
 		},
 		RelatedRisks: nil,
 	}

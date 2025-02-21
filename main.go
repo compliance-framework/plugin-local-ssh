@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	protolang "github.com/golang/protobuf/proto"
+	"github.com/hashicorp/go-hclog"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"os"
 	"os/exec"
 	"time"
@@ -14,7 +17,6 @@ import (
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 )
 
@@ -32,7 +34,7 @@ func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureRespo
 func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
-	cmd := exec.CommandContext(ctx, "sshd", "-T")
+	cmd := exec.CommandContext(ctx, "ssh", "root@jgc", "sshd", "-T")
 	stdout, err := cmd.Output()
 	if err != nil {
 		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
@@ -58,7 +60,7 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	l.logger.Debug("evaluating local ssh against policies", "policy", request.BundlePath)
 	ctx := context.TODO()
 
-	start_time := time.Now().Format(time.RFC3339)
+	startTime := time.Now()
 
 	results, err := policyManager.New(ctx, l.logger, request.BundlePath).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
@@ -69,9 +71,10 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	l.logger.Debug("local ssh evaluation completed", "results", results)
 
 	response := runner.NewCallableEvalResponse()
+	result := response.GetResult()
 
 	hostname := os.Getenv("HOSTNAME")
-	response.Title = fmt.Sprintf("SSH Configuration for host: %s", hostname)
+	result.Title = fmt.Sprintf("SSH Configuration for host: %s", hostname)
 
 	for _, result := range results {
 		tasks := []*proto.Task{}
@@ -99,46 +102,48 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 
 			tasks = append(tasks, &proto.Task{
 				Title:       task.Title,
-				Description: task.Description,
-				Activities:  activities,
+				Description: &task.Description,
+				//Tasks: tasks,
+				//Activities:  activities,
 			})
 		}
 
 		if len(result.Violations) == 0 {
+			title := fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage())
 			response.AddObservation(&proto.Observation{
-				Id:          uuid.New().String(),
-				Title:       fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage()),
+				Uuid:        uuid.New().String(),
+				Title:       &title,
 				Description: fmt.Sprintf("Observed no violations on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
-				Collected:   time.Now().Format(time.RFC3339),
-				Expires:     time.Now().AddDate(0, 1, 0).Format(time.RFC3339), // Add one month for the expiration
-				RelevantEvidence: []*proto.Evidence{
+				Collected:   timestamppb.New(time.Now()),
+				Expires:     timestamppb.New(time.Now().AddDate(0, 1, 0)), // Add one month for the expiration
+				RelevantEvidence: []*proto.RelevantEvidence{
 					{
 						Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
 					},
 				},
 			})
 
-			status := proto.FindingStatus_MITIGATED
-			statusString := proto.FindingStatus_name[int32(status)]
+			status := runner.FindingTargetStatusSatisfied
 			response.AddFinding(&proto.Finding{
-				Id:          uuid.New().String(),
 				Title:       fmt.Sprintf("No violations found on %s", result.Policy.Package.PurePackage()),
 				Description: fmt.Sprintf("No violations found on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
-
-				Status: statusString,
-
-				Tasks: tasks,
+				Target: &proto.FindingTarget{
+					Status: &proto.ObjectiveStatus{
+						State: status,
+					},
+				},
 			})
 		}
 
 		if len(result.Violations) > 0 {
+			title := fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage())
 			observation := &proto.Observation{
-				Id:          uuid.New().String(),
-				Title:       fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage()),
+				Uuid:        uuid.New().String(),
+				Title:       &title,
 				Description: fmt.Sprintf("Observed %d violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage()),
-				Collected:   time.Now().Format(time.RFC3339),
-				Expires:     time.Now().AddDate(0, 1, 0).Format(time.RFC3339), // Add one month for the expiration
-				RelevantEvidence: []*proto.Evidence{
+				Collected:   timestamppb.New(time.Now()),
+				Expires:     timestamppb.New(time.Now().AddDate(0, 1, 0)), // Add one month for the expiration
+				RelevantEvidence: []*proto.RelevantEvidence{
 					{
 						Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
 					},
@@ -147,18 +152,21 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 			response.AddObservation(observation)
 
 			for _, violation := range result.Violations {
-				status := proto.FindingStatus_OPEN
-				statusString := proto.FindingStatus_name[int32(status)]
+				status := runner.FindingTargetStatusNotSatisfied
 				response.AddFinding(&proto.Finding{
-					Id:          uuid.New().String(),
 					Title:       violation.Title,
 					Description: violation.Description,
-
-					Remarks:             violation.Remarks,
-					RelatedObservations: []string{observation.Id},
-					Status:              statusString,
-
-					Tasks: tasks,
+					Remarks:     &violation.Remarks,
+					RelatedObservations: []*proto.RelatedObservation{
+						{
+							ObservationUuid: observation.Uuid,
+						},
+					},
+					Target: &proto.FindingTarget{
+						Status: &proto.ObjectiveStatus{
+							State: status,
+						},
+					},
 				})
 			}
 		}
@@ -167,17 +175,13 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 			links := []*proto.Link{}
 			for _, link := range risk.Links {
 				links = append(links, &proto.Link{
-					Href:             link.URL,
-					MediaType:        "TODO",
-					Rel:              "TODO",
-					ResourceFragment: "TODO",
-					Text:             link.Text,
+					Href: link.URL,
+					Text: &link.Text,
 				})
 			}
 
 			response.AddRiskEntry(&proto.Risk{
 				Title:       risk.Title,
-				SubjectId:   "TODO",
 				Description: risk.Description,
 				Statement:   risk.Statement,
 				Props:       []*proto.Property{},
@@ -186,12 +190,16 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 		}
 	}
 
-	response.AddLogEntry(&proto.LogEntry{
-		Title:       "Local SSH check",
-		Description: "Local SSH Plugin checks completed successfully",
-		Start:       start_time,
-		End:         time.Now().Format(time.RFC3339),
+	endTime := time.Now()
+	response.AddLogEntry(&proto.AssessmentLog_Entry{
+		Title:       protolang.String("Local SSH check"),
+		Description: protolang.String("Local SSH Plugin checks completed successfully"),
+		Start:       timestamppb.New(startTime),
+		End:         timestamppb.New(time.Now()),
 	})
+
+	result.Start = timestamppb.New(startTime)
+	result.End = timestamppb.New(endTime)
 
 	return response.Result(), err
 }
