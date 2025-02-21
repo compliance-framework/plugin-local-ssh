@@ -2,6 +2,8 @@ module github.com/chris-cmsoft/cf-plugin-local-ssh
 
 go 1.23.2
 
+replace github.com/compliance-framework/agent => ../agent
+
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
 	github.com/compliance-framework/agent v0.0.12

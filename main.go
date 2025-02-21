@@ -5,9 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	protolang "github.com/golang/protobuf/proto"
-	"github.com/hashicorp/go-hclog"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"os"
 	"os/exec"
 	"time"
@@ -16,8 +13,11 @@ import (
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
+	protolang "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type LocalSSH struct {
@@ -56,13 +56,13 @@ func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.Prep
 	return &proto.PrepareForEvalResponse{}, nil
 }
 
-func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error) {
-	l.logger.Debug("evaluating local ssh against policies", "policy", request.BundlePath)
+func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalResponse, error) {
+	l.logger.Debug("evaluating local ssh against policies", "policy", policyBundle)
 	ctx := context.TODO()
 
 	startTime := time.Now()
 
-	results, err := policyManager.New(ctx, l.logger, request.BundlePath).Execute(ctx, "local_ssh", l.data)
+	results, err := policyManager.New(ctx, l.logger, policyBundle).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
 		l.logger.Error("Failed to create new policyManager object", "error", err)
 		return &proto.EvalResponse{}, err
