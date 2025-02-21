@@ -194,8 +194,8 @@ func (l *LocalSSH) Eval(request *proto.EvalRequest) (*proto.EvalResponse, error)
 	response.AddLogEntry(&proto.AssessmentLog_Entry{
 		Title:       protolang.String("Local SSH check"),
 		Description: protolang.String("Local SSH Plugin checks completed successfully"),
-		Start:       startTime.Format(time.RFC3339),
-		End:         protolang.String(time.Now().Format(time.RFC3339)),
+		Start:       timestamppb.New(startTime),
+		End:         timestamppb.New(time.Now()),
 	})
 
 	result.Start = timestamppb.New(startTime)
