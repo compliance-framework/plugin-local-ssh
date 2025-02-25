@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"time"
 
@@ -71,10 +70,6 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 	l.logger.Debug("local ssh evaluation completed", "results", results)
 
 	response := runner.NewCallableEvalResponse()
-	result := response.GetResult()
-
-	hostname := os.Getenv("HOSTNAME")
-	result.Title = fmt.Sprintf("SSH Configuration for host: %s", hostname)
 
 	for _, result := range results {
 		tasks := []*proto.Task{}
@@ -190,7 +185,6 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 		}
 	}
 
-	endTime := time.Now()
 	response.AddLogEntry(&proto.AssessmentLog_Entry{
 		Title:       protolang.String("Local SSH check"),
 		Description: protolang.String("Local SSH Plugin checks completed successfully"),
@@ -198,8 +192,9 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 		End:         timestamppb.New(time.Now()),
 	})
 
-	result.Start = timestamppb.New(startTime)
-	result.End = timestamppb.New(endTime)
+  if err := a.AddResult(); err != nil {
+		return nil, err
+	}
 
 	return response.Result(), err
 }
