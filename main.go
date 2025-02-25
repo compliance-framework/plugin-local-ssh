@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -25,12 +26,12 @@ type LocalSSH struct {
 	config map[string]string
 }
 
-func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
-	l.config = req.Config
+func (l *LocalSSH) Configure(config map[string]string) (*proto.ConfigureResponse, error) {
+	l.config = config
 	return &proto.ConfigureResponse{}, nil
 }
 
-func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.PrepareForEvalResponse, error) {
+func (l *LocalSSH) PrepareForEval() (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
 	cmd := exec.CommandContext(ctx, "sshd", "-T")
@@ -63,49 +64,55 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 
 	results, err := policyManager.New(ctx, l.logger, policyBundle).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
-		l.logger.Error("Failed to create new policyManager object", "error", err)
-		return &proto.EvalResponse{}, err
+		l.logger.Error("Failed to evaluate against policy bundle", "error", err)
+		return &proto.EvalResponse{
+			Status: proto.ExecutionStatus_FAILURE,
+		}, err
 	}
 
 	l.logger.Debug("local ssh evaluation completed", "results", results)
 
-	response := runner.NewCallableEvalResponse()
+	hostname := os.Getenv("HOSTNAME")
+
+	assessmentResult := runner.NewCallableAssessmentResult()
+	assessmentResult.Title = fmt.Sprintf("SSH Configuration for host: %s", hostname)
 
 	for _, result := range results {
-		tasks := []*proto.Task{}
-		for _, task := range result.Tasks {
-			activities := []*proto.Activity{}
+		// TODO: Figure out how to send back tasks again
+		// tasks := []*proto.Task{}
+		// for _, task := range result.Tasks {
+		// 	activities := []*proto.Activity{}
 
-			for _, activity := range task.Activities {
-				steps := []*proto.Step{}
-				for _, step := range activity.Steps {
-					steps = append(steps, &proto.Step{
-						Title:     step.Title,
-						SubjectId: "TODO",
-					})
-				}
+		// 	for _, activity := range task.Activities {
+		// 		steps := []*proto.Step{}
+		// 		for _, step := range activity.Steps {
+		// 			steps = append(steps, &proto.Step{
+		// 				Title:     step.Title,
+		// 				SubjectId: "TODO",
+		// 			})
+		// 		}
 
-				activities = append(activities, &proto.Activity{
-					Title:       activity.Title,
-					SubjectId:   "TODO",
-					Description: activity.Description,
-					Type:        activity.Type,
-					Steps:       steps,
-					Tools:       activity.Tools,
-				})
-			}
+		// 		activities = append(activities, &proto.Activity{
+		// 			Title:       activity.Title,
+		// 			SubjectId:   "TODO",
+		// 			Description: activity.Description,
+		// 			Type:        activity.Type,
+		// 			Steps:       steps,
+		// 			Tools:       activity.Tools,
+		// 		})
+		// 	}
 
-			tasks = append(tasks, &proto.Task{
-				Title:       task.Title,
-				Description: &task.Description,
-				//Tasks: tasks,
-				//Activities:  activities,
-			})
-		}
+		// 	tasks = append(tasks, &proto.Task{
+		// 		Title:       task.Title,
+		// 		Description: &task.Description,
+		// 		//Tasks: tasks,
+		// 		//Activities:  activities,
+		// 	})
+		// }
 
 		if len(result.Violations) == 0 {
 			title := fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage())
-			response.AddObservation(&proto.Observation{
+			assessmentResult.AddObservation(&proto.Observation{
 				Uuid:        uuid.New().String(),
 				Title:       &title,
 				Description: fmt.Sprintf("Observed no violations on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
@@ -119,7 +126,7 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 			})
 
 			status := runner.FindingTargetStatusSatisfied
-			response.AddFinding(&proto.Finding{
+			assessmentResult.AddFinding(&proto.Finding{
 				Title:       fmt.Sprintf("No violations found on %s", result.Policy.Package.PurePackage()),
 				Description: fmt.Sprintf("No violations found on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
 				Target: &proto.FindingTarget{
@@ -144,11 +151,11 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 					},
 				},
 			}
-			response.AddObservation(observation)
+			assessmentResult.AddObservation(observation)
 
 			for _, violation := range result.Violations {
 				status := runner.FindingTargetStatusNotSatisfied
-				response.AddFinding(&proto.Finding{
+				assessmentResult.AddFinding(&proto.Finding{
 					Title:       violation.Title,
 					Description: violation.Description,
 					Remarks:     &violation.Remarks,
@@ -175,7 +182,7 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 				})
 			}
 
-			response.AddRiskEntry(&proto.Risk{
+			assessmentResult.AddRiskEntry(&proto.Risk{
 				Title:       risk.Title,
 				Description: risk.Description,
 				Statement:   risk.Statement,
@@ -185,18 +192,28 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 		}
 	}
 
-	response.AddLogEntry(&proto.AssessmentLog_Entry{
+	endTime := time.Now()
+
+	assessmentResult.Start = timestamppb.New(startTime)
+	assessmentResult.End = timestamppb.New(endTime)
+
+	assessmentResult.AddLogEntry(&proto.AssessmentLog_Entry{
 		Title:       protolang.String("Local SSH check"),
 		Description: protolang.String("Local SSH Plugin checks completed successfully"),
 		Start:       timestamppb.New(startTime),
-		End:         timestamppb.New(time.Now()),
+		End:         timestamppb.New(endTime),
 	})
 
-  if err := a.AddResult(); err != nil {
-		return nil, err
+	if err := a.AddResult(assessmentResult.Result()); err != nil {
+		l.logger.Error("Failed to add assessment result", "error", err)
+		return &proto.EvalResponse{
+			Status: proto.ExecutionStatus_FAILURE,
+		}, err
 	}
 
-	return response.Result(), err
+	return &proto.EvalResponse{
+		Status: proto.ExecutionStatus_SUCCESS,
+	}, nil
 }
 
 func main() {
