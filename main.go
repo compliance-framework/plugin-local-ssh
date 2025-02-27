@@ -56,7 +56,7 @@ func (l *LocalSSH) PrepareForEval() (*proto.PrepareForEvalResponse, error) {
 	return &proto.PrepareForEvalResponse{}, nil
 }
 
-func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalResponse, error) {
+func (l *LocalSSH) Eval(policyBundle string, a runner.ApiHelper) (*proto.EvalResponse, error) {
 	l.logger.Debug("evaluating local ssh against policies", "policy", policyBundle)
 	ctx := context.TODO()
 
@@ -204,7 +204,7 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.AddHelper) (*proto.EvalRes
 		End:         timestamppb.New(endTime),
 	})
 
-	if err := a.AddResult(assessmentResult.Result()); err != nil {
+	if err := a.CreateResult(assessmentResult.Result()); err != nil {
 		l.logger.Error("Failed to add assessment result", "error", err)
 		return &proto.EvalResponse{
 			Status: proto.ExecutionStatus_FAILURE,
