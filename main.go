@@ -13,6 +13,7 @@ import (
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
+	"github.com/compliance-framework/configuration-service/sdk"
 	protolang "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
@@ -34,7 +35,13 @@ func (l *LocalSSH) Configure(config map[string]string) (*proto.ConfigureResponse
 func (l *LocalSSH) PrepareForEval() (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
-	cmd := exec.CommandContext(ctx, "sshd", "-T")
+	var cmd *exec.Cmd
+	l.logger.Debug("config", l.config)
+	if l.config["sudo"] == "true" || l.config["sudo"] == "1" {
+		cmd = exec.CommandContext(ctx, "sudo", "sshd", "-T")
+	} else {
+		cmd = exec.CommandContext(ctx, "sshd", "-T")
+	}
 	stdout, err := cmd.Output()
 	if err != nil {
 		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
@@ -204,7 +211,18 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.ApiHelper) (*proto.EvalRes
 		End:         timestamppb.New(endTime),
 	})
 
-	if err := a.CreateResult(assessmentResult.Result()); err != nil {
+	streamId, err := sdk.SeededUUID(map[string]string{
+		"hostname": hostname,
+	})
+	if err != nil {
+		l.logger.Error("Failed to add assessment result", "error", err)
+		return &proto.EvalResponse{
+			Status: proto.ExecutionStatus_FAILURE,
+		}, err
+	}
+
+	err = a.CreateResult(assessmentResult.Result(), streamId.String())
+	if err != nil {
 		l.logger.Error("Failed to add assessment result", "error", err)
 		return &proto.EvalResponse{
 			Status: proto.ExecutionStatus_FAILURE,
