@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/compliance-framework/configuration-service/sdk"
 	"os"
 	"os/exec"
 	"time"
@@ -13,7 +14,6 @@ import (
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
-	"github.com/compliance-framework/configuration-service/sdk"
 	protolang "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
@@ -27,12 +27,12 @@ type LocalSSH struct {
 	config map[string]string
 }
 
-func (l *LocalSSH) Configure(config map[string]string) (*proto.ConfigureResponse, error) {
-	l.config = config
+func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
+	l.config = req.GetConfig()
 	return &proto.ConfigureResponse{}, nil
 }
 
-func (l *LocalSSH) PrepareForEval() (*proto.PrepareForEvalResponse, error) {
+func (l *LocalSSH) PrepareForEval(req *proto.PrepareForEvalRequest) (*proto.PrepareForEvalResponse, error) {
 	ctx := context.TODO()
 	l.logger.Debug("fetching local ssh configuration")
 	var cmd *exec.Cmd
@@ -63,13 +63,13 @@ func (l *LocalSSH) PrepareForEval() (*proto.PrepareForEvalResponse, error) {
 	return &proto.PrepareForEvalResponse{}, nil
 }
 
-func (l *LocalSSH) Eval(policyBundle string, a runner.ApiHelper) (*proto.EvalResponse, error) {
-	l.logger.Debug("evaluating local ssh against policies", "policy", policyBundle)
+func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*proto.EvalResponse, error) {
+	l.logger.Debug("evaluating local ssh against policies", "policy", req.GetBundlePath())
 	ctx := context.TODO()
 
 	startTime := time.Now()
 
-	results, err := policyManager.New(ctx, l.logger, policyBundle).Execute(ctx, "local_ssh", l.data)
+	results, err := policyManager.New(ctx, l.logger, req.GetBundlePath()).Execute(ctx, "local_ssh", l.data)
 	if err != nil {
 		l.logger.Error("Failed to evaluate against policy bundle", "error", err)
 		return &proto.EvalResponse{
@@ -212,17 +212,18 @@ func (l *LocalSSH) Eval(policyBundle string, a runner.ApiHelper) (*proto.EvalRes
 	})
 
 	streamId, err := sdk.SeededUUID(map[string]string{
-		"hostname": hostname,
+		"type":      "ssh",
+		"_hostname": hostname,
+		"_policy":   req.GetBundlePath(),
 	})
 	if err != nil {
-		l.logger.Error("Failed to add assessment result", "error", err)
-		return &proto.EvalResponse{
-			Status: proto.ExecutionStatus_FAILURE,
-		}, err
+		return nil, err
 	}
-
-	err = a.CreateResult(assessmentResult.Result(), streamId.String())
-	if err != nil {
+	if err := apiHelper.CreateResult(streamId.String(), map[string]string{
+		"type":      "ssh",
+		"_hostname": hostname,
+		"_policy":   req.GetBundlePath(),
+	}, assessmentResult.Result()); err != nil {
 		l.logger.Error("Failed to add assessment result", "error", err)
 		return &proto.EvalResponse{
 			Status: proto.ExecutionStatus_FAILURE,
