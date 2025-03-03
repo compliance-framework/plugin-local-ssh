@@ -132,7 +132,8 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 					},
 				},
 				Labels: map[string]string{
-					"hi": "Sup",
+					"package": string(result.Policy.Package),
+					"type":    "ssh",
 				},
 			})
 
@@ -146,7 +147,8 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 					},
 				},
 				Labels: map[string]string{
-					"hi": "Sup",
+					"package": string(result.Policy.Package),
+					"type":    "ssh",
 				},
 			})
 		}
@@ -184,7 +186,8 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 						},
 					},
 					Labels: map[string]string{
-						"hi": "Sup",
+						"package": string(result.Policy.Package),
+						"type":    "ssh",
 					},
 				})
 			}
