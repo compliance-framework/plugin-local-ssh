@@ -5,10 +5,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/compliance-framework/configuration-service/sdk"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/compliance-framework/configuration-service/sdk"
 
 	"github.com/chris-cmsoft/conftojson/pkg"
 	policyManager "github.com/compliance-framework/agent/policy-manager"
@@ -130,6 +131,9 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 						Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
 					},
 				},
+				Labels: map[string]string{
+					"hi": "Sup",
+				},
 			})
 
 			status := runner.FindingTargetStatusSatisfied
@@ -140,6 +144,9 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 					Status: &proto.ObjectiveStatus{
 						State: status,
 					},
+				},
+				Labels: map[string]string{
+					"hi": "Sup",
 				},
 			})
 		}
@@ -175,6 +182,9 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 						Status: &proto.ObjectiveStatus{
 							State: status,
 						},
+					},
+					Labels: map[string]string{
+						"hi": "Sup",
 					},
 				})
 			}
