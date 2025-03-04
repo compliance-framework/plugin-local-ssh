@@ -9,12 +9,11 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/compliance-framework/configuration-service/sdk"
-
 	"github.com/chris-cmsoft/conftojson/pkg"
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
+	"github.com/compliance-framework/configuration-service/sdk"
 	protolang "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
@@ -165,6 +164,10 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 					{
 						Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
 					},
+				},
+				Labels: map[string]string{
+					"package": string(result.Policy.Package),
+					"type":    "ssh",
 				},
 			}
 			assessmentResult.AddObservation(observation)
