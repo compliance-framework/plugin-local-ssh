@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
-	github.com/compliance-framework/agent v0.0.14
+	github.com/compliance-framework/agent v0.0.15
 	github.com/compliance-framework/configuration-service v0.0.5
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
