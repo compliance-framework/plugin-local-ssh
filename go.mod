@@ -4,8 +4,8 @@ go 1.23.2
 
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
-	github.com/compliance-framework/agent v0.0.13
-	github.com/compliance-framework/configuration-service v0.0.3
+	github.com/compliance-framework/agent v0.0.15
+	github.com/compliance-framework/configuration-service v0.0.5
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
@@ -42,7 +42,6 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yashtewari/glob-intersection v0.2.0 // indirect
-	go.mongodb.org/mongo-driver v1.17.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel v1.33.0 // indirect
 	go.opentelemetry.io/otel/metric v1.33.0 // indirect
