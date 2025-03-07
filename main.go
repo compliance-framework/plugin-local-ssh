@@ -15,10 +15,10 @@ import (
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
 	"github.com/compliance-framework/configuration-service/sdk"
-	protolang "github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
+	protolang "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -50,7 +50,8 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 	stdout, err := cmd.Output()
 	if err != nil {
 		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
-		return proto.ExecutionStatus_FAILURE, err
+		evalStatus = proto.ExecutionStatus_FAILURE
+		errAcc = errors.Join(errAcc, err)
 	}
 
 	buf := bytes.NewBuffer(stdout)
@@ -60,7 +61,8 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 	sshConfigMap, err := pkg.ConvertConfToMap(scanner)
 	if err != nil {
 		l.logger.Error("Failed to convert SSH config to map", "error", err)
-		return proto.ExecutionStatus_FAILURE, err
+		evalStatus = proto.ExecutionStatus_FAILURE
+		errAcc = errors.Join(errAcc, err)
 	}
 
 	startTime := time.Now()
