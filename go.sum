@@ -32,8 +32,8 @@ github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6 h1:50LCDU9
 github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6/go.mod h1:lGxtdIwiDsj1U+vUxAydlacBWodyOoBjgJ9IX6T8YTQ=
 github.com/compliance-framework/agent v0.0.15 h1:VEB3xI3VSgTeudw8L+Czv9VCMt6vM7Nutd+JeMjWjuk=
 github.com/compliance-framework/agent v0.0.15/go.mod h1:/ZxHkJJm/wthxm+W7atUgSMfL2217cCaBgN6dfsDSYo=
-github.com/compliance-framework/configuration-service v0.0.5 h1:vK9mSb8dzaaTt+hd+g2g3+8nvfr/Ha5pMXB4yiYMA64=
-github.com/compliance-framework/configuration-service v0.0.5/go.mod h1:irXS+U+ZGaNrOmaNqb+pMmo+4BxSZJ0/vs4ne/5qVJc=
+github.com/compliance-framework/configuration-service v0.0.6 h1:P0jI2GwTNApegsN3UYDyEsGaaXrDnPgX31i41liKX7o=
+github.com/compliance-framework/configuration-service v0.0.6/go.mod h1:irXS+U+ZGaNrOmaNqb+pMmo+4BxSZJ0/vs4ne/5qVJc=
 github.com/containerd/containerd v1.7.24 h1:zxszGrGjrra1yYJW/6rhm9cJ1ZQ8rkKBR48brqsa7nA=
 github.com/containerd/containerd v1.7.24/go.mod h1:7QUzfURqZWCZV7RLNEn1XjUCQLEf0bkaK4GjUaZehxw=
 github.com/containerd/log v0.1.0 h1:TCJt7ioM2cr/tfR8GPbGf9/VRAX8D2B4PjzCpfX540I=
