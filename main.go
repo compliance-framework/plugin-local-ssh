@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/chris-cmsoft/cf-plugin-local-ssh/internal"
+	"github.com/google/uuid"
 	"os"
 	"time"
 
@@ -184,6 +185,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 			}
 
 			observation := proto.Observation{
+				ID:         uuid.New().String(),
 				UUID:       observationUUID.String(),
 				Collected:  timestamppb.New(startTime),
 				Expires:    timestamppb.New(startTime.Add(24 * time.Hour)),
@@ -200,6 +202,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 
 			newFinding := func() *proto.Finding {
 				return &proto.Finding{
+					ID:        uuid.New().String(),
 					UUID:      findingUUID.String(),
 					Collected: timestamppb.New(time.Now()),
 					Labels: map[string]string{
@@ -211,7 +214,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 					Origins:             []*proto.Origin{{Actors: actors}},
 					Subjects:            subjects,
 					Components:          components,
-					RelatedObservations: []*proto.RelatedObservation{{ObservationUUID: observationUUID.String()}},
+					RelatedObservations: []*proto.RelatedObservation{{ObservationUUID: observation.ID}},
 					Controls:            nil,
 				}
 			}
