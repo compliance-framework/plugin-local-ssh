@@ -200,7 +200,8 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 
 			newFinding := func() *proto.Finding {
 				return &proto.Finding{
-					UUID: findingUUID.String(),
+					UUID:      findingUUID.String(),
+					Collected: timestamppb.New(time.Now()),
 					Labels: map[string]string{
 						"type":         "ssh",
 						"host":         hostname,
