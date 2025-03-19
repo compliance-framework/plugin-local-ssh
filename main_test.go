@@ -1,80 +1,78 @@
 package main
 
 import (
-	policy_manager "github.com/compliance-framework/agent/policy-manager"
+	"context"
 	"github.com/compliance-framework/agent/runner/proto"
-	protolang "github.com/golang/protobuf/proto"
-	"github.com/google/uuid"
-	"github.com/open-policy-agent/opa/ast"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/hashicorp/go-hclog"
 	"testing"
-	"time"
 )
 
-func TestLocalSSH_Eval(t *testing.T) {
+type TestSSHFetcher struct {
+	logger hclog.Logger
+	config map[string]string
+}
 
-	results := []policy_manager.Result{
-		{
-			Policy: struct {
-				File        string
-				Package     policy_manager.Package
-				Annotations []*ast.Annotations
-			}{
-				File:        "something.rego",
-				Package:     "compliance_framework.local_ssh.deny_password_auth",
-				Annotations: []*ast.Annotations{},
-			},
-			EvalOutput: &policy_manager.EvalOutput{
-				Violations: []policy_manager.Violation{
-					{
-						Title: "SSH Hosts are not allowed to have SSH password enabled",
-					},
-					{
-						Title: "Something else",
-					},
-				},
-			},
+func NewTestSSHFetcher(logger hclog.Logger, config map[string]string) *TestSSHFetcher {
+	return &TestSSHFetcher{
+		logger: logger,
+		config: config,
+	}
+}
+
+func (l *TestSSHFetcher) FetchSSHConfiguration(ctx context.Context) (map[string]interface{}, []*proto.Step, error) {
+	steps := make([]*proto.Step, 0)
+
+	return map[string]interface{}{
+		"authorizedkeysfile": []string{
+			".ssh/authorized_keys",
+			".ssh/authorized_keys2",
 		},
-	}
-	// ==============================================
-
-	observation_one := proto.Observation{
-		Uuid:        uuid.New().String(),
-		Title:       protolang.String(results[0].Violations[0].Title),
-		Description: "",
-		Props:       nil,
-		Links:       nil,
-		Remarks:     protolang.String(""),
-		Collected:   timestamppb.New(time.Now()),
-		Expires:     timestamppb.New(time.Now().Add(time.Hour * 24)),
-	}
-
-	observation_two := proto.Observation{
-		Uuid:             uuid.New().String(),
-		Title:            protolang.String(""),
-		Description:      "",
-		Props:            nil,
-		Links:            nil,
-		Remarks:          protolang.String(""),
-		Collected:        timestamppb.New(time.Now()),
-		Expires:          timestamppb.New(time.Now().Add(time.Hour * 24)),
-		RelevantEvidence: nil,
-	}
-
-	_ = proto.Finding{
-		Title:       "",
-		Description: "",
-		Remarks:     protolang.String(""),
-		Props:       nil,
-		Links:       nil,
-		RelatedObservations: []*proto.RelatedObservation{
-			{
-				ObservationUuid: observation_one.Uuid,
-			},
-			{
-				ObservationUuid: observation_two.Uuid,
-			},
+		"listenaddress": []string{
+			"[::]:22",
+			"0.0.0.0:22",
 		},
-		RelatedRisks: nil,
+		"passwordauthentication": []string{
+			"yes",
+		},
+		"permitrootlogin": []string{
+			"without-password",
+		},
+		"port": []string{
+			"22",
+		},
+		"pubkeyauthentication": []string{
+			"yes",
+		},
+	}, steps, nil
+}
+
+func TestLocalSSH_EvaluatePolicies(t *testing.T) {
+
+	logger := hclog.NewNullLogger()
+
+	fetcher := NewTestSSHFetcher(logger, map[string]string{})
+
+	localSSH := &LocalSSH{
+		logger: logger,
+	}
+
+	observations, findings, err := localSSH.EvaluatePolicies(context.TODO(), fetcher, &proto.EvalRequest{
+		PolicyPaths: []string{
+			"examples/policies",
+		},
+	})
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(observations) <= 0 {
+		t.Log("No observations returned from evaluation")
+		t.Fail()
+	}
+
+	if len(findings) <= 0 {
+		t.Log("No findings returned from evaluation")
+		t.Fail()
 	}
 }

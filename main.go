@@ -1,24 +1,19 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/chris-cmsoft/cf-plugin-local-ssh/internal"
 	"os"
-	"os/exec"
 	"time"
 
-	"github.com/chris-cmsoft/conftojson/pkg"
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
 	"github.com/compliance-framework/configuration-service/sdk"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
-	protolang "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -34,228 +29,226 @@ func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureRespo
 }
 
 func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*proto.EvalResponse, error) {
-
 	ctx := context.TODO()
-	evalStatus := proto.ExecutionStatus_SUCCESS
-	var errAcc error
+	fetcher := internal.NewLocalSSHFetcher(l.logger, l.config)
 
-	l.logger.Debug("fetching local ssh configuration")
-	var cmd *exec.Cmd
-	l.logger.Debug("config", l.config)
-	if l.config["sudo"] == "true" || l.config["sudo"] == "1" {
-		cmd = exec.CommandContext(ctx, "sudo", "sshd", "-T")
-	} else {
-		cmd = exec.CommandContext(ctx, "sshd", "-T")
-	}
-	stdout, err := cmd.Output()
+	observations, findings, err := l.EvaluatePolicies(ctx, fetcher, req)
 	if err != nil {
-		l.logger.Error("Failed to fetch SSH configuration (sshd -T)", "error", err)
-		evalStatus = proto.ExecutionStatus_FAILURE
-		errAcc = errors.Join(errAcc, err)
+		return &proto.EvalResponse{
+			Status: proto.ExecutionStatus_FAILURE,
+		}, err
 	}
 
-	buf := bytes.NewBuffer(stdout)
-	scanner := bufio.NewScanner(buf)
-
-	l.logger.Debug("converting ssh configuration to json map for evaluation")
-	sshConfigMap, err := pkg.ConvertConfToMap(scanner)
-	if err != nil {
-		l.logger.Error("Failed to convert SSH config to map", "error", err)
-		evalStatus = proto.ExecutionStatus_FAILURE
-		errAcc = errors.Join(errAcc, err)
+	if err = apiHelper.CreateObservationsAndFindings(ctx, observations, findings); err != nil {
+		l.logger.Error("Failed to send compliance validation results", "error", err)
+		return &proto.EvalResponse{
+			Status: proto.ExecutionStatus_FAILURE,
+		}, err
 	}
+	return &proto.EvalResponse{
+		Status: proto.ExecutionStatus_SUCCESS,
+	}, err
+}
 
+func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSHFetcher, req *proto.EvalRequest) ([]*proto.Observation, []*proto.Finding, error) {
 	startTime := time.Now()
+	var accumulatedErrors error
+
+	activities := make([]*proto.Activity, 0)
+	findings := make([]*proto.Finding, 0)
+	observations := make([]*proto.Observation, 0)
+
+	l.logger.Debug("config", l.config)
+	sshConfigMap, collectSteps, err := sshFetcher.FetchSSHConfiguration(ctx)
+	activities = append(activities, &proto.Activity{
+		Title:       "Collect SSH configuration",
+		Description: "Collect SSH configuration from host machine, and prepare collected data for validation in policy engine",
+		Steps:       collectSteps,
+	})
+
+	if err != nil {
+		accumulatedErrors = errors.Join(accumulatedErrors, err)
+		// We've failed to collect the needed information, we should exit.
+		return observations, findings, accumulatedErrors
+	}
+
 	for _, policyPath := range req.GetPolicyPaths() {
+		// Explicitly reset steps to make things readable
+		steps := make([]*proto.Step, 0)
+		steps = append(steps, &proto.Step{
+			Title:       "Compile policy bundle",
+			Description: "Using a locally addressable policy path, compile the policy files to an in memory executable.",
+		})
+		steps = append(steps, &proto.Step{
+			Title:       "Execute policy bundle",
+			Description: "Using previously collected JSON-formatted SSH configuration, execute the compiled policies",
+		})
 		results, err := policyManager.New(ctx, l.logger, policyPath).Execute(ctx, "local_ssh", sshConfigMap)
 		if err != nil {
 			l.logger.Error("Failed to evaluate against policy bundle", "error", err)
-			return &proto.EvalResponse{
-				Status: proto.ExecutionStatus_FAILURE,
-			}, err
+			accumulatedErrors = errors.Join(accumulatedErrors, err)
+			return observations, findings, accumulatedErrors
 		}
 
+		activities = append(activities, &proto.Activity{
+			Title:       "Execute policy",
+			Description: "Prepare and compile policy bundles, and execute them using the prepared SSH configuration data",
+			Steps:       steps,
+		})
+
 		l.logger.Debug("local ssh evaluation completed", "results", results)
-
 		hostname := os.Getenv("HOSTNAME")
+		subjectAttributeMap := map[string]string{
+			"type":     "machine-instance",
+			"hostname": hostname,
+		}
+		subjects := []*proto.SubjectReference{
+			{
+				Type:       "machine-instance",
+				Attributes: subjectAttributeMap,
+				Title:      internal.StringAddressed("Machine Instance"),
+				Remarks:    internal.StringAddressed("A machine instance running the SSH software for remote access."),
+				Props: []*proto.Property{
+					{
+						Name:    "hostname",
+						Value:   hostname,
+						Remarks: internal.StringAddressed("The local hostname of the machine where the plugin has been executed"),
+					},
+				},
+			},
+		}
+		actors := []*proto.OriginActor{
+			{
+				Title: "The Continuous Compliance Framework",
+				Type:  "assessment-platform",
+				Links: []*proto.Link{
+					{
+						Href: "https://compliance-framework.github.io/docs/",
+						Rel:  internal.StringAddressed("reference"),
+						Text: internal.StringAddressed("The Continuous Compliance Framework"),
+					},
+				},
+				Props: nil,
+			},
+			{
+				Title: "Continuous Compliance Framework - Local SSH Plugin",
+				Type:  "tool",
+				Links: []*proto.Link{
+					{
+						Href: "https://github.com/compliance-framework/plugin-local-ssh",
+						Rel:  internal.StringAddressed("reference"),
+						Text: internal.StringAddressed("The Continuous Compliance Framework' Local SSH Plugin"),
+					},
+				},
+				Props: nil,
+			},
+		}
+		components := []*proto.ComponentReference{
+			{
+				Identifier: "common-components/ssh",
+			},
+		}
 
-		assessmentResult := runner.NewCallableAssessmentResult()
-		assessmentResult.Title = fmt.Sprintf("SSH Configuration for host: %s", hostname)
-
+		activities = append(activities, &proto.Activity{
+			Title:       "Compile Results",
+			Description: "Using the output from policy execution, compile the resulting output to Observations and Findings, marking any violations, risks, and other OSCAL-familiar data",
+			Steps:       steps,
+		})
 		for _, result := range results {
-			// TODO: Figure out how to send back tasks again
-			// tasks := []*proto.Task{}
-			// for _, task := range result.Tasks {
-			// 	activities := []*proto.Activity{}
+			// Observation UUID should differ for each individual subject, but remain consistent when validating the same policy for the same subject.
+			// This acts as an identifier to show the history of an observation.
+			observationUUIDMap := internal.MergeMaps(subjectAttributeMap, map[string]string{
+				"type":        "observation",
+				"policy":      result.Policy.Package.PurePackage(),
+				"policy_file": result.Policy.File,
+			})
+			observationUUID, err := sdk.SeededUUID(observationUUIDMap)
+			if err != nil {
+				accumulatedErrors = errors.Join(accumulatedErrors, err)
+				// We've been unable to do much here, but let's try the next one regardless.
+				continue
+			}
 
-			// 	for _, activity := range task.Activities {
-			// 		steps := []*proto.Step{}
-			// 		for _, step := range activity.Steps {
-			// 			steps = append(steps, &proto.Step{
-			// 				Title:     step.Title,
-			// 				SubjectId: "TODO",
-			// 			})
-			// 		}
+			// Finding UUID should differ for each individual subject, but remain consistent when validating the same policy for the same subject.
+			// This acts as an identifier to show the history of a finding.
+			findingUUIDMap := internal.MergeMaps(subjectAttributeMap, map[string]string{
+				"type":        "finding",
+				"policy":      result.Policy.Package.PurePackage(),
+				"policy_file": result.Policy.File,
+			})
+			findingUUID, err := sdk.SeededUUID(findingUUIDMap)
+			if err != nil {
+				accumulatedErrors = errors.Join(accumulatedErrors, err)
+				// We've been unable to do much here, but let's try the next one regardless.
+				continue
+			}
 
-			// 		activities = append(activities, &proto.Activity{
-			// 			Title:       activity.Title,
-			// 			SubjectId:   "TODO",
-			// 			Description: activity.Description,
-			// 			Type:        activity.Type,
-			// 			Steps:       steps,
-			// 			Tools:       activity.Tools,
-			// 		})
-			// 	}
+			observation := proto.Observation{
+				UUID:       observationUUID.String(),
+				Collected:  timestamppb.New(startTime),
+				Expires:    timestamppb.New(startTime.Add(24 * time.Hour)),
+				Origins:    []*proto.Origin{{Actors: actors}},
+				Subjects:   subjects,
+				Activities: activities,
+				Components: components,
+				RelevantEvidence: []*proto.RelevantEvidence{
+					{
+						Description: fmt.Sprintf("Policy %v was executed against the Local SSH configuration, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
+					},
+				},
+			}
 
-			// 	tasks = append(tasks, &proto.Task{
-			// 		Title:       task.Title,
-			// 		Description: &task.Description,
-			// 		//Tasks: tasks,
-			// 		//Activities:  activities,
-			// 	})
-			// }
+			newFinding := func() *proto.Finding {
+				return &proto.Finding{
+					UUID: findingUUID.String(),
+					Labels: map[string]string{
+						"type":         "ssh",
+						"host":         hostname,
+						"_policy":      result.Policy.Package.PurePackage(),
+						"_policy_path": result.Policy.File,
+					},
+					Origins:             []*proto.Origin{{Actors: actors}},
+					Subjects:            subjects,
+					Components:          components,
+					RelatedObservations: []*proto.RelatedObservation{{ObservationUUID: observationUUID.String()}},
+					Controls:            nil,
+				}
+			}
 
 			if len(result.Violations) == 0 {
-				title := fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage())
-				assessmentResult.AddObservation(&proto.Observation{
-					Uuid:        uuid.New().String(),
-					Title:       &title,
-					Description: fmt.Sprintf("Observed no violations on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
-					Collected:   timestamppb.New(time.Now()),
-					Expires:     timestamppb.New(time.Now().AddDate(0, 1, 0)), // Add one month for the expiration
-					RelevantEvidence: []*proto.RelevantEvidence{
-						{
-							Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
-						},
-					},
-					Labels: map[string]string{
-						"package": string(result.Policy.Package),
-						"type":    "ssh",
-					},
-				})
+				observation.Title = internal.StringAddressed(fmt.Sprintf("Local SSH Validation on %s passed.", result.Policy.Package.PurePackage()))
+				observation.Description = fmt.Sprintf("Observed no violations on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage())
+				observations = append(observations, &observation)
 
-				status := runner.FindingTargetStatusSatisfied
-				assessmentResult.AddFinding(&proto.Finding{
-					Title:       fmt.Sprintf("No violations found on %s", result.Policy.Package.PurePackage()),
-					Description: fmt.Sprintf("No violations found on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage()),
-					Target: &proto.FindingTarget{
-						Status: &proto.ObjectiveStatus{
-							State: status,
-						},
-					},
-					Labels: map[string]string{
-						"package": string(result.Policy.Package),
-						"type":    "ssh",
-					},
-				})
+				finding := newFinding()
+				finding.Title = fmt.Sprintf("No violations found on %s", result.Policy.Package.PurePackage())
+				finding.Description = fmt.Sprintf("No violations found on the %s policy within the Local SSH Compliance Plugin.", result.Policy.Package.PurePackage())
+				finding.Status = &proto.FindingStatus{
+					State: runner.FindingTargetStatusSatisfied,
+				}
+				findings = append(findings, finding)
+				continue
 			}
 
 			if len(result.Violations) > 0 {
-				title := fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage())
-				observation := &proto.Observation{
-					Uuid:        uuid.New().String(),
-					Title:       &title,
-					Description: fmt.Sprintf("Observed %d violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage()),
-					Collected:   timestamppb.New(time.Now()),
-					Expires:     timestamppb.New(time.Now().AddDate(0, 1, 0)), // Add one month for the expiration
-					RelevantEvidence: []*proto.RelevantEvidence{
-						{
-							Description: fmt.Sprintf("Policy %v was executed against the Local SSH output from machine XXX, using the Local SSH Compliance Plugin", result.Policy.Package.PurePackage()),
-						},
-					},
-					Labels: map[string]string{
-						"package": string(result.Policy.Package),
-						"type":    "ssh",
-					},
-				}
-				assessmentResult.AddObservation(observation)
+				observation.Title = internal.StringAddressed(fmt.Sprintf("Validation on %s failed.", result.Policy.Package.PurePackage()))
+				observation.Description = fmt.Sprintf("Observed %d violation(s) on the %s policy within the Local SSH Compliance Plugin.", len(result.Violations), result.Policy.Package.PurePackage())
+				observations = append(observations, &observation)
 
 				for _, violation := range result.Violations {
-					status := runner.FindingTargetStatusNotSatisfied
-					assessmentResult.AddFinding(&proto.Finding{
-						Title:       violation.Title,
-						Description: violation.Description,
-						Remarks:     &violation.Remarks,
-						RelatedObservations: []*proto.RelatedObservation{
-							{
-								ObservationUuid: observation.Uuid,
-							},
-						},
-						Target: &proto.FindingTarget{
-							Status: &proto.ObjectiveStatus{
-								State: status,
-							},
-						},
-						Labels: map[string]string{
-							"package": string(result.Policy.Package),
-							"type":    "ssh",
-						},
-					})
+					finding := newFinding()
+					finding.Title = violation.Title
+					finding.Description = violation.Description
+					finding.Remarks = internal.StringAddressed(violation.Remarks)
+					finding.Status = &proto.FindingStatus{
+						State: runner.FindingTargetStatusNotSatisfied,
+					}
+					findings = append(findings, finding)
 				}
 			}
-
-			for _, risk := range result.Risks {
-				links := []*proto.Link{}
-				for _, link := range risk.Links {
-					links = append(links, &proto.Link{
-						Href: link.URL,
-						Text: &link.Text,
-					})
-				}
-
-				assessmentResult.AddRiskEntry(&proto.Risk{
-					Title:       risk.Title,
-					Description: risk.Description,
-					Statement:   risk.Statement,
-					Props:       []*proto.Property{},
-					Links:       []*proto.Link{},
-				})
-			}
-		}
-
-		endTime := time.Now()
-
-		assessmentResult.Start = timestamppb.New(startTime)
-		assessmentResult.End = timestamppb.New(endTime)
-
-		assessmentResult.AddLogEntry(&proto.AssessmentLog_Entry{
-			Title:       protolang.String("Local SSH check"),
-			Description: protolang.String("Local SSH Plugin checks completed successfully"),
-			Start:       timestamppb.New(startTime),
-			End:         timestamppb.New(endTime),
-		})
-
-		streamId, err := sdk.SeededUUID(map[string]string{
-			"type":      "ssh",
-			"_hostname": hostname,
-			"_policy":   policyPath,
-		})
-		if err != nil {
-			l.logger.Error("Failed to seedUUID", "error", err)
-			evalStatus = proto.ExecutionStatus_FAILURE
-			errAcc = errors.Join(errAcc, err)
-			continue
-		}
-		if err := apiHelper.CreateResult(
-			streamId.String(),
-			map[string]string{
-				"type":      "ssh",
-				"_hostname": hostname,
-				"_policy":   policyPath,
-			},
-			policyPath,
-			assessmentResult.Result(),
-		); err != nil {
-			l.logger.Error("Failed to add assessment result", "error", err)
-			evalStatus = proto.ExecutionStatus_FAILURE
-			errAcc = errors.Join(errAcc, err)
-			continue
 		}
 	}
-
-	return &proto.EvalResponse{
-		Status: evalStatus,
-	}, errAcc
+	return observations, findings, accumulatedErrors
 }
 
 func main() {
