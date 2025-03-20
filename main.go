@@ -162,6 +162,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 				"type":        "observation",
 				"policy":      result.Policy.Package.PurePackage(),
 				"policy_file": result.Policy.File,
+				"policy_path": policyPath,
 			})
 			observationUUID, err := sdk.SeededUUID(observationUUIDMap)
 			if err != nil {
@@ -176,6 +177,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 				"type":        "finding",
 				"policy":      result.Policy.Package.PurePackage(),
 				"policy_file": result.Policy.File,
+				"policy_path": policyPath,
 			})
 			findingUUID, err := sdk.SeededUUID(findingUUIDMap)
 			if err != nil {
