@@ -2,19 +2,13 @@ module github.com/chris-cmsoft/cf-plugin-local-ssh
 
 go 1.23.2
 
-replace github.com/compliance-framework/agent => ../agent
-
-replace github.com/compliance-framework/configuration-service => ../configuration-service
-
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
-	github.com/compliance-framework/agent v0.0.15
-	github.com/compliance-framework/configuration-service v0.0.6
-	github.com/golang/protobuf v1.5.4
+	github.com/compliance-framework/agent v0.0.17-0.20250321090502-da8bea7a21e9
+	github.com/compliance-framework/configuration-service v0.0.7-0.20250321090043-a0c87cd91adc
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.2
-	github.com/open-policy-agent/opa v1.0.0
 	google.golang.org/protobuf v1.36.2
 )
 
@@ -30,12 +24,14 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.1.0 // indirect
+	github.com/open-policy-agent/opa v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.61.0 // indirect
