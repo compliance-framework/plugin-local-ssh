@@ -40,8 +40,15 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 		}, err
 	}
 
-	if err = apiHelper.CreateObservationsAndFindings(ctx, observations, findings); err != nil {
-		l.logger.Error("Failed to send compliance validation results", "error", err)
+	if err = apiHelper.CreateObservations(ctx, observations); err != nil {
+		l.logger.Error("Failed to send observations", "error", err)
+		return &proto.EvalResponse{
+			Status: proto.ExecutionStatus_FAILURE,
+		}, err
+	}
+
+	if err = apiHelper.CreateFindings(ctx, findings); err != nil {
+		l.logger.Error("Failed to send findings", "error", err)
 		return &proto.EvalResponse{
 			Status: proto.ExecutionStatus_FAILURE,
 		}, err
