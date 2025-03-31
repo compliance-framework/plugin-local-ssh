@@ -4,8 +4,8 @@ go 1.23.2
 
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
-	github.com/compliance-framework/agent v0.1.1-0.20250321115839-c49e668b8cd0
-	github.com/compliance-framework/configuration-service v0.1.1-0.20250321114854-eaabb420ccd6
+	github.com/compliance-framework/agent v0.1.5-0.20250331102214-801620cbe9ba
+	github.com/compliance-framework/configuration-service v0.1.2-0.20250327060646-625c895cd99c
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.2
