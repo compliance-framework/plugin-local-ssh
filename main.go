@@ -137,6 +137,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 			subjects,
 			components,
 			actors,
+			activities,
 		)
 		obs, finds, err := processor.GenerateResults(ctx, policyPath, sshConfigMap)
 		observations = slices.Concat(observations, obs)
