@@ -13,20 +13,36 @@ import (
 	"slices"
 )
 
+type Config struct {
+	Host       string
+	Port       int32
+	Connection struct {
+		Url string
+	}
+	Hosts []string
+}
+
 type LocalSSH struct {
 	logger hclog.Logger
 	data   map[string]interface{}
-	config map[string]string
+	config *Config
 }
 
 func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
-	l.config = req.GetConfig()
+	l.config = &Config{}
+	err := req.Decode(l.config)
+	if err != nil {
+		return nil, err
+	}
+	l.logger.Info("Config", "host", l.config.Host, "port", l.config.Port)
+	l.logger.Info("Config", "hosts", l.config.Hosts)
+	l.logger.Info("Config", "connection", l.config.Connection.Url)
 	return &proto.ConfigureResponse{}, nil
 }
 
 func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*proto.EvalResponse, error) {
 	ctx := context.TODO()
-	fetcher := internal.NewLocalSSHFetcher(l.logger, l.config)
+	fetcher := internal.NewLocalSSHFetcher(l.logger, map[string]string{})
 
 	observations, findings, err := l.EvaluatePolicies(ctx, fetcher, req)
 	if err != nil {
