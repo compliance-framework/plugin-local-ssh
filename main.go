@@ -13,14 +13,7 @@ import (
 	"slices"
 )
 
-type Config struct {
-	Host       string
-	Port       int32
-	Connection struct {
-		Url string
-	}
-	Hosts []string
-}
+type Config struct{}
 
 type LocalSSH struct {
 	logger hclog.Logger
@@ -30,13 +23,10 @@ type LocalSSH struct {
 
 func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
 	l.config = &Config{}
-	err := req.Decode(l.config)
+	err := req.GetConfig().Unmarshal(l.config)
 	if err != nil {
 		return nil, err
 	}
-	l.logger.Info("Config", "host", l.config.Host, "port", l.config.Port)
-	l.logger.Info("Config", "hosts", l.config.Hosts)
-	l.logger.Info("Config", "connection", l.config.Connection.Url)
 	return &proto.ConfigureResponse{}, nil
 }
 
