@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
-	github.com/compliance-framework/agent v0.1.7-0.20250407053328-1983bae6f0e8
+	github.com/compliance-framework/agent v0.1.9-0.20250424132407-4358b278a00e
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.2
 )
@@ -25,8 +25,11 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/open-policy-agent/opa v1.0.0 // indirect
