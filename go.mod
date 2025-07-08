@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
-	github.com/compliance-framework/agent v0.1.9-0.20250708110521-1e5e179acadc
+	github.com/compliance-framework/agent v0.1.9-0.20250708111836-ad190fafbe1f
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.2
 )
