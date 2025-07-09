@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/chris-cmsoft/cf-plugin-local-ssh/internal"
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
@@ -28,37 +29,30 @@ func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*pr
 	ctx := context.TODO()
 	fetcher := internal.NewLocalSSHFetcher(l.logger, l.config)
 
-	observations, findings, err := l.EvaluatePolicies(ctx, fetcher, req)
+	evidences, err := l.EvaluatePolicies(ctx, fetcher, req)
 	if err != nil {
 		return &proto.EvalResponse{
 			Status: proto.ExecutionStatus_FAILURE,
 		}, err
 	}
 
-	if err = apiHelper.CreateObservations(ctx, observations); err != nil {
-		l.logger.Error("Failed to send observations", "error", err)
+	if err = apiHelper.CreateEvidence(ctx, evidences); err != nil {
+		l.logger.Error("Failed to send evidence", "error", err)
 		return &proto.EvalResponse{
 			Status: proto.ExecutionStatus_FAILURE,
 		}, err
 	}
 
-	if err = apiHelper.CreateFindings(ctx, findings); err != nil {
-		l.logger.Error("Failed to send findings", "error", err)
-		return &proto.EvalResponse{
-			Status: proto.ExecutionStatus_FAILURE,
-		}, err
-	}
 	return &proto.EvalResponse{
 		Status: proto.ExecutionStatus_SUCCESS,
 	}, err
 }
 
-func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSHFetcher, req *proto.EvalRequest) ([]*proto.Observation, []*proto.Finding, error) {
+func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSHFetcher, req *proto.EvalRequest) ([]*proto.Evidence, error) {
 	var accumulatedErrors error
 
 	activities := make([]*proto.Activity, 0)
-	findings := make([]*proto.Finding, 0)
-	observations := make([]*proto.Observation, 0)
+	evidences := make([]*proto.Evidence, 0)
 
 	l.logger.Debug("config", l.config)
 	sshConfigMap, collectSteps, err := sshFetcher.FetchSSHConfiguration(ctx)
@@ -71,28 +65,10 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 	if err != nil {
 		accumulatedErrors = errors.Join(accumulatedErrors, err)
 		// We've failed to collect the needed information, we should exit.
-		return observations, findings, accumulatedErrors
+		return evidences, accumulatedErrors
 	}
 
 	hostname := os.Getenv("HOSTNAME")
-	subjects := []*proto.SubjectReference{
-		{
-			Type: "machine-instance",
-			Attributes: map[string]string{
-				"type":     "machine-instance",
-				"hostname": hostname,
-			},
-			Title:   policyManager.Pointer("Machine Instance"),
-			Remarks: policyManager.Pointer("A machine instance running the SSH software for remote access."),
-			Props: []*proto.Property{
-				{
-					Name:    "hostname",
-					Value:   hostname,
-					Remarks: policyManager.Pointer("The local hostname of the machine where the plugin has been executed"),
-				},
-			},
-		},
-	}
 	actors := []*proto.OriginActor{
 		{
 			Title: "The Continuous Compliance Framework",
@@ -104,7 +80,6 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 					Text: internal.StringAddressed("The Continuous Compliance Framework"),
 				},
 			},
-			Props: nil,
 		},
 		{
 			Title: "Continuous Compliance Framework - Local SSH Plugin",
@@ -116,41 +91,85 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 					Text: internal.StringAddressed("The Continuous Compliance Framework' Local SSH Plugin"),
 				},
 			},
-			Props: nil,
 		},
 	}
-	components := []*proto.ComponentReference{
+	components := []*proto.Component{
 		{
+			Identifier:  "common-components/ssh",
+			Type:        "software",
+			Title:       "OpenSSH Server",
+			Description: "The OpenSSH server component provides encrypted remote login and command execution capabilities. This component enforces access controls, logging, and secure key management.",
+			Purpose:     "Secure remote shell access and file transfer for managed systems.",
+			Protocols: []*proto.Protocol{
+				{
+					UUID:  "70968CE7-AAF3-4E86-A4AF-6F68FCD42FF6",
+					Name:  "SSH",
+					Title: "Secure Shell",
+					PortRanges: []*proto.PortRange{
+						{
+							End:       22,
+							Start:     22,
+							Transport: "TCP",
+						},
+					},
+				},
+			},
+		},
+	}
+	inventory := []*proto.InventoryItem{
+		{
+			Identifier: fmt.Sprintf("machine-instance/%s", hostname),
+			Type:       "web-server",
+			Title:      fmt.Sprintf("Machine Instance %s", hostname),
+			Props: []*proto.Property{
+				{
+					Name:    "hostname",
+					Value:   hostname,
+					Remarks: policyManager.Pointer("The local hostname of the machine where the plugin has been executed"),
+				},
+			},
+			ImplementedComponents: []*proto.InventoryItemImplementedComponent{
+				{
+					Identifier: "common-components/ssh",
+				},
+			},
+		},
+	}
+	subjects := []*proto.Subject{
+		{
+			Type:       proto.SubjectType_SUBJECT_TYPE_COMPONENT,
 			Identifier: "common-components/ssh",
+		},
+		{
+			Type:       proto.SubjectType_SUBJECT_TYPE_INVENTORY_ITEM,
+			Identifier: fmt.Sprintf("machine-instance/%s", hostname),
 		},
 	}
 
 	for _, policyPath := range req.GetPolicyPaths() {
-		// Explicitly reset steps to make things readable
 		processor := policyManager.NewPolicyProcessor(
 			l.logger,
 			map[string]string{
-				"type":         "machine-instance",
+				"type":         "ssh",
 				"hostname":     hostname,
 				"_policy_path": policyPath,
 			},
 			subjects,
 			components,
+			inventory,
 			actors,
 			activities,
 		)
-		obs, finds, err := processor.GenerateResults(ctx, policyPath, sshConfigMap)
-		observations = slices.Concat(observations, obs)
-		findings = slices.Concat(findings, finds)
+		evidence, err := processor.GenerateResults(ctx, policyPath, sshConfigMap)
+		evidences = slices.Concat(evidences, evidence)
 		if err != nil {
 			accumulatedErrors = errors.Join(accumulatedErrors, err)
 		}
 	}
 
-	l.logger.Info("collected observations", "count", len(observations))
-	l.logger.Info("collected findings", "count", len(findings))
+	l.logger.Debug("Successfully generated evidence", "count", len(evidences))
 
-	return observations, findings, accumulatedErrors
+	return evidences, accumulatedErrors
 }
 
 func main() {

@@ -56,7 +56,7 @@ func TestLocalSSH_EvaluatePolicies(t *testing.T) {
 		logger: logger,
 	}
 
-	observations, findings, err := localSSH.EvaluatePolicies(context.TODO(), fetcher, &proto.EvalRequest{
+	evidences, err := localSSH.EvaluatePolicies(context.TODO(), fetcher, &proto.EvalRequest{
 		PolicyPaths: []string{
 			"examples/policies",
 		},
@@ -66,13 +66,8 @@ func TestLocalSSH_EvaluatePolicies(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(observations) <= 0 {
-		t.Log("No observations returned from evaluation")
-		t.Fail()
-	}
-
-	if len(findings) <= 0 {
-		t.Log("No findings returned from evaluation")
+	if len(evidences) <= 0 {
+		t.Log("No evidences returned from evaluation")
 		t.Fail()
 	}
 }
