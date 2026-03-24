@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"slices"
+
 	"github.com/chris-cmsoft/cf-plugin-local-ssh/internal"
 	policyManager "github.com/compliance-framework/agent/policy-manager"
 	"github.com/compliance-framework/agent/runner"
 	"github.com/compliance-framework/agent/runner/proto"
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
-	"os"
-	"slices"
 )
 
 type LocalSSH struct {
@@ -23,6 +24,28 @@ type LocalSSH struct {
 func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
 	l.config = req.GetConfig()
 	return &proto.ConfigureResponse{}, nil
+}
+
+func (l *LocalSSH) Init(req *proto.InitRequest, apiHelper runner.ApiHelper) (*proto.InitResponse, error) {
+	ctx := context.Background()
+
+	subjectTemplates := []*proto.SubjectTemplate{
+		{
+			Name:                "OpenSSH Daemon",
+			Type:                proto.SubjectType_SUBJECT_TYPE_COMPONENT,
+			TitleTemplate:       "OpenSSH Daemon for host: {{ .hostname }}",
+			DescriptionTemplate: "OpenSSH Daemon running on host {{ .hostname }}",
+			PurposeTemplate:     "Represents an OpenSSH daemon being monitored for compliance",
+			IdentityLabelKeys:   []string{"hostname", "_plugin"},
+			SelectorLabels:      []*proto.SubjectLabelSelector{},
+			LabelSchema: []*proto.SubjectLabelSchema{
+				{Key: "hostname", Description: "The local hostname of the machine"},
+				{Key: "_plugin", Description: "The plugin identifier"},
+			},
+		},
+	}
+
+	return runner.InitWithSubjectsAndRisksFromPolicies(ctx, l.logger, req, apiHelper, subjectTemplates)
 }
 
 func (l *LocalSSH) Eval(req *proto.EvalRequest, apiHelper runner.ApiHelper) (*proto.EvalResponse, error) {
@@ -187,7 +210,7 @@ func main() {
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: runner.HandshakeConfig,
 		Plugins: map[string]goplugin.Plugin{
-			"runner": &runner.RunnerGRPCPlugin{
+			"runner": &runner.RunnerV2GRPCPlugin{
 				Impl: localSSH,
 			},
 		},

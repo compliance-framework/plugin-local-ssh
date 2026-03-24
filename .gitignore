@@ -2,3 +2,4 @@
 dist/
 .DS_Store
 cf-plugin-local-ssh
+.config
