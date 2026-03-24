@@ -2,10 +2,11 @@ package compliance_framework.local_ssh.require_public_key
 
 import future.keywords.in
 
+title := "SSH public key authentication is enabled"
+description := "Checks whether SSH public key authentication is enabled on the host machine."
+
 violation[{
-    "title": "Public key authentication is not enabled",
-    "description": "Public key authentication should be used for strong and secure authentication on host machines.",
-    "remarks": "Enabled public key authentication for host machine."
+    "id": "ssh_require_public_key",
 }] if {
 	not "yes" in input.pubkeyauthentication
 }
