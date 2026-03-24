@@ -22,7 +22,7 @@ jobs:
       - name: Authenticate gooci cli
         run: gooci login ghcr.io --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
       - name: gooci Upload Version
-        run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{github.ref_name}}
+        run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{github.ref_name}} --annotate="org.ccf.plugin.protocol.version=2"
       - name: gooci Upload Latest
         if: "!github.event.release.prerelease"
-        run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+        run: gooci upload dist/ ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest --annotate="org.ccf.plugin.protocol.version=2"

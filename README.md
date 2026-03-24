@@ -18,7 +18,8 @@ package compliance_framework.local_ssh.deny_password_auth
 
 The plugin expects Rego policies to output a `violation` key to indicate failed resources, which will be reported to the 
 compliance framework. Additional data can be added to violations, that describe what failed, and recommendations on how 
-to fix them.
+to fix them. Policies should also expose top-level `title` and `description` values so evidence can be
+created for both passing and failing evaluations.
 
 Here is an example rego policy which ensures that passwords are turned off for SSH-able hosts.
 
@@ -28,7 +29,13 @@ package compliance_framework.local_ssh.deny_password_auth
 
 import future.keywords.in
 
+title := "SSH password authentication is disabled"
+description := "Checks whether SSH password authentication is disabled on the host machine."
+
 violation[{
+    # ID identifies the violation for mapping to risk templates
+    "id": "ssh_password_auth",
+
     # Title describes the violation
     "title": "Host SSH is using password authentication.",
     # Description adds more details about the violation

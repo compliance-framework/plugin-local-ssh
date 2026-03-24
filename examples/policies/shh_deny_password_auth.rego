@@ -2,10 +2,11 @@ package compliance_framework.local_ssh.deny_password_auth
 
 import future.keywords.in
 
+title := "SSH password authentication is disabled"
+description := "Checks whether SSH password authentication is disabled on the host machine."
+
 violation[{
-    "title": "Host SSH is using password authentication.",
-    "description": "Host SSH should not use password, as this is insecure to brute force attacks from external sources.",
-    "remarks": "Migrate to using SSH Public Keys, and switch off password authentication."
+    "id": "ssh_password_auth",
 }] if {
 	"yes" in input.passwordauthentication
 }
