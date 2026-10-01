@@ -16,13 +16,19 @@ import (
 )
 
 type LocalSSH struct {
-	logger hclog.Logger
-	data   map[string]interface{}
-	config map[string]string
+	logger     hclog.Logger
+	data       map[string]interface{}
+	config     map[string]string
+	policyData map[string]interface{}
 }
 
 func (l *LocalSSH) Configure(req *proto.ConfigureRequest) (*proto.ConfigureResponse, error) {
 	l.config = req.GetConfig()
+	if policyData := req.GetPolicyData(); policyData != nil {
+		l.policyData = policyData.AsMap()
+	} else {
+		l.policyData = nil
+	}
 	return &proto.ConfigureResponse{}, nil
 }
 
@@ -182,6 +188,7 @@ func (l *LocalSSH) EvaluatePolicies(ctx context.Context, sshFetcher internal.SSH
 			inventory,
 			actors,
 			activities,
+			l.policyData,
 		)
 		evidence, err := processor.GenerateResults(ctx, policyPath, sshConfigMap)
 		evidences = slices.Concat(evidences, evidence)
