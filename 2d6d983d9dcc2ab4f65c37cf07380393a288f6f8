@@ -1,0 +1,5 @@
+lisa-design:
+- ci.yml is mock-plugin-1's caller verbatim (pinned 7b55019ed36050a57eb8273f6a67fd4b2395adb0 # v1.5.1) minus its mock-only trial header comment; jobs ci, release-checks, notify.
+- push.yml and test.yml deleted: only push.yml referenced test.yml; release.yml and build-and-upload.yml stay unchanged (W3 replaces them).
+- .goreleaser.yaml archives.format -> formats: [tar.gz] to clear the goreleaser check deprecation; a full snapshot release before and after produced the same five archive names, platforms and contents (README.md, plugin).
+- Pre-existing unused LocalSSH.data field (whole-repo lint only) left alone: new-only lint is clean and it is out of scope; reported as a follow-up.
