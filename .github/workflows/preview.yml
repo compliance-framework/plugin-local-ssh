@@ -1,0 +1,26 @@
+# Publishes :pr-<number> previews for PRs labelled `preview` (no :main previews for plugins).
+name: preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  # A merged PR's events carry the base branch as github.ref, so key PR runs by number.
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    uses: compliance-framework/workflows/.github/workflows/preview.yml@6e7fc9c04b59c7d1117938da397f8a6f8df036ab # v1.5.2
+    with:
+      kind: go-plugin
+      on-main: false
+    permissions:
+      contents: read
+      packages: write
