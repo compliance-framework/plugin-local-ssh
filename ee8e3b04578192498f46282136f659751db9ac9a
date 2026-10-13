@@ -1,2 +1,6 @@
 lisa-selfreview:
 Pass 1 (packs core, go, go-plugin): approve, no findings. Checked CORE-CI-001 (every caller has top-level permissions; no checkout steps in callers), PLUGIN-CI-001 (release-please.yml concurrency without cancel-in-progress is deliberate, copied from mock-plugin-1 and the reviewed plugin-github-repositories#26), release-please-config.json drift vs workflows defaults.json@v1.5.2: none. actionlint v1.7.12 clean, go build/test pass, goreleaser check + snapshot (v2.16.0) produce the same 5 archive names as v0.4.0.
+
+lisa-design:
+Seed .release-please-manifest.json at 0.4.0: latest final release v0.4.0 (tag vX.Y.Z, ancestor of main). Only release-relevant commit since is fix(deps) #32, so the first release PR should propose 0.4.1.
+README "Releases" section left unchanged: it names goreleaser/Docker and the releases page but not tag pushes or the old workflows (spec step 9 only covers those). It is stale (Docker WIP, chris-cmsoft concom URL); flagged to the human instead of changed here.
