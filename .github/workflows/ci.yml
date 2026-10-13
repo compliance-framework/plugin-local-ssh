@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  pull_request:
+    # labeled/unlabeled: release-checks reads the PR labels from the event (release:major-approved).
+    # closed: notify marks the PR's needs-human card handled and closes its CI incident.
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled, closed]
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  ci:
+    uses: compliance-framework/workflows/.github/workflows/ci-go-plugin.yml@7b55019ed36050a57eb8273f6a67fd4b2395adb0 # v1.5.1
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      security-events: write
+    secrets: inherit
+
+  release-checks:
+    uses: compliance-framework/workflows/.github/workflows/release-checks.yml@7b55019ed36050a57eb8273f6a67fd4b2395adb0 # v1.5.1
+    permissions:
+      contents: read
+
+  notify:
+    needs: [ci, release-checks]
+    if: always()
+    uses: compliance-framework/workflows/.github/workflows/notify-failure.yml@7b55019ed36050a57eb8273f6a67fd4b2395adb0 # v1.5.1
+    with:
+      needs: ${{ toJSON(needs) }}
+    permissions:
+      contents: read
+    secrets: inherit
