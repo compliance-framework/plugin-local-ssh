@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/compliance-framework/plugin-local-ssh/compare/v0.5.0...v0.5.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **deps:** bump agent to v0.9.4 ([#47](https://github.com/compliance-framework/plugin-local-ssh/issues/47)) ([f19c96d](https://github.com/compliance-framework/plugin-local-ssh/commit/f19c96d3e5a19a156a7fb7f7ddd1a030241842e3))
+* **deps:** update module github.com/hashicorp/go-plugin to v1.8.0 ([#45](https://github.com/compliance-framework/plugin-local-ssh/issues/45)) ([c52a1c9](https://github.com/compliance-framework/plugin-local-ssh/commit/c52a1c9b6d14b203694c47ad894de8987485c52d))
+
 ## [0.5.0](https://github.com/compliance-framework/plugin-local-ssh/compare/v0.4.0...v0.5.0) (2026-10-14)
 
 
