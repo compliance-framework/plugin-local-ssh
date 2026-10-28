@@ -1,0 +1,2 @@
+lisa-design:
+- toolchain go1.26.10 = newest stable 1.26 patch on go.dev, strictly above the go line (1.26.1), which stays as the minimum language version; it survives go mod tidy.
