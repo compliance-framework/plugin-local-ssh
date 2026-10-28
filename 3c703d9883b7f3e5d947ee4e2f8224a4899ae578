@@ -1,0 +1,2 @@
+lisa-selfreview:
+pass 1 (single reviewer pass): approve, no findings. Checked: toolchain kept after tidy, build/vet/tests pass, no replace/go.work, setup-go go-version-file reads the line, golangci-lint version check is minor-only.
