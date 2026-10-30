@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/compliance-framework/plugin-local-ssh/compare/v0.5.1...v0.5.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* **deps:** build with the go1.26.10 toolchain so Renovate can ship Go security fixes ([#48](https://github.com/compliance-framework/plugin-local-ssh/issues/48)) ([586b7df](https://github.com/compliance-framework/plugin-local-ssh/commit/586b7dff5e77994f982686027811ff941ebe9320))
+
 ## [0.5.1](https://github.com/compliance-framework/plugin-local-ssh/compare/v0.5.0...v0.5.1) (2026-10-28)
 
 
