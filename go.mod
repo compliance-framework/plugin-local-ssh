@@ -2,7 +2,7 @@ module github.com/chris-cmsoft/cf-plugin-local-ssh
 
 go 1.26.1
 
-toolchain go1.26.10
+toolchain go1.27.3
 
 require (
 	github.com/chris-cmsoft/conftojson v0.0.0-20241105132434-7c8873e5cbb6
