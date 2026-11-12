@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.3](https://github.com/compliance-framework/plugin-local-ssh/compare/v0.5.2...v0.5.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** update go toolchain directive to v1.27.4 [security] ([#53](https://github.com/compliance-framework/plugin-local-ssh/issues/53)) ([ad69a69](https://github.com/compliance-framework/plugin-local-ssh/commit/ad69a6945c0127cd1fcae96cf9e136970369034a))
+* **deps:** update module golang.org/x/crypto to v0.59.0 [security] ([#55](https://github.com/compliance-framework/plugin-local-ssh/issues/55)) ([b83d008](https://github.com/compliance-framework/plugin-local-ssh/commit/b83d008945e5e65ca119f4a82b9f8b53cb1b2002))
+
 ## [0.5.2](https://github.com/compliance-framework/plugin-local-ssh/compare/v0.5.1...v0.5.2) (2026-11-02)
 
 
